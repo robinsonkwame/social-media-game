@@ -446,6 +446,25 @@ $('rulesBtn').addEventListener('click', () => {
   root.querySelector('[data-close]').addEventListener('click', () => { root.innerHTML = ''; });
 });
 
+// ---------------------------------------------------------------- solo restart
+
+// Two clicks within a few seconds, so a stray tap doesn't wipe the game.
+const restartBtn = $('restartBtn');
+let restartArmed = null;
+restartBtn?.addEventListener('click', async () => {
+  if (!restartArmed) {
+    restartBtn.textContent = 'Click again to restart';
+    restartArmed = setTimeout(() => { restartArmed = null; restartBtn.textContent = 'Restart'; }, 4000);
+    return;
+  }
+  clearTimeout(restartArmed);
+  restartArmed = null;
+  restartBtn.textContent = 'Restart';
+  try { await api.host('reset'); } catch { /* a fresh join resets anyway */ }
+  slug = ''; save('');
+  showJoin('');
+});
+
 // ---------------------------------------------------------------- start
 
 if (slug) showGame(); else showJoin('');
