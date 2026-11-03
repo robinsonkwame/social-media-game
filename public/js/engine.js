@@ -52,7 +52,7 @@ export function newTeam(game, { name, profile, tag, bot = null }, now = Date.now
   return {
     slug, name: display, profile, role: p.role, tag: p.role === 'infl' ? tag : null, bot,
     color: TEAM_COLORS[index % TEAM_COLORS.length],
-    money: p.money, start: p.money, att: p.att, trust: p.trust, gain: p.gain, risk: 1,
+    money: p.money, start: p.money, att: p.att, trust: p.trust, trustStart: p.trust, gain: p.gain, risk: 1,
     pos: 0, c1: null, c2: null, pref1: null, pref2: null, paid: [], finished: null,
     contracts: [], past: [], flops: [], fromOthers: { att: 0, spaces: 0 },
     history: [], cur: {}, backlashes: 0, lastRoll: 0, joinedAt: now,
@@ -571,7 +571,10 @@ export function extendGame(game) {
 }
 
 export function payoutOf(game, slug) { return game.winner && game.winner.slug === slug ? CFG.prize : 0; }
+// Profit: money made or lost since the start, plus the prize for the winner. This is the score.
 export const netOf = (game, t) => t.money - t.start + payoutOf(game, t.slug);
+// Trust gained or lost since the start (teams from before trustStart existed use their profile's value).
+export const trustChangeOf = t => t.trust - (t.trustStart ?? PROFILES[t.profile].trust);
 
 export function finishGame(game, rng = Math.random) {
   if (game.phase === 'lobby' || game.phase === 'finished') throw new GameError('Nothing to finish');
@@ -600,11 +603,11 @@ export function removeTeam(game, slug) {
 
 // One row per team per round, for the instructor's CSV.
 export function csvRows(game) {
-  const head = ['round', 'team', 'role', 'profile', 'bot', 'roll', 'risk_before', 'risk_after', 'backlash', 'offer_made', 'offer_selected', 'contracts_signed', 'event_role', 'choice', 'position', 'attention', 'trust', 'net_money'];
+  const head = ['round', 'team', 'role', 'profile', 'bot', 'roll', 'risk_before', 'risk_after', 'backlash', 'offer_made', 'offer_selected', 'contracts_signed', 'event_role', 'choice', 'position', 'attention', 'trust', 'trust_change', 'profit'];
   const rows = [head];
   for (const t of teamsOf(game)) for (const h of t.history) {
     rows.push([h.round, t.name, t.role, t.profile, t.bot || '', h.roll ?? '', h.riskBefore ?? '', h.riskAfter ?? '', h.backlash ? 1 : 0,
-      h.offerMade ?? '', h.offerSelected ? 1 : 0, h.signed ?? 0, h.eventRole ?? '', h.reaction ?? '', h.pos, h.att, h.trust, h.money]);
+      h.offerMade ?? '', h.offerSelected ? 1 : 0, h.signed ?? 0, h.eventRole ?? '', h.reaction ?? '', h.pos, h.att, h.trust, h.trust - (t.trustStart ?? PROFILES[t.profile].trust), h.money]);
   }
   return rows.map(r => r.map(v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v).join(',')).join('\n');
 }

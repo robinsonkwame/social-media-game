@@ -174,3 +174,7 @@ a { color: var(--accent); }
 @media (max-width: 640px) { .joinbox { grid-template-columns: minmax(0, 1fr); } .qr img, .qr svg { width: 180px; height: 180px; } }
 
 [hidden] { display: none !important; }
+
+.delta { font-size: 11px; font-weight: 700; color: var(--muted); }
+.delta.up { color: var(--ok); }
+.delta.down { color: var(--danger); }

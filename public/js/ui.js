@@ -1,7 +1,7 @@
 // Small helpers shared by the host and player screens.
 import { CARDS } from './cards.js';
 import { band, BAND_NAME } from './rules.js';
-import { netOf, money } from './engine.js';
+import { netOf, trustChangeOf, money } from './engine.js';
 
 export { money };
 export const $ = id => document.getElementById(id);
@@ -23,13 +23,17 @@ export function storyHtml(cardKey, showReal) {
     (showReal ? `<div class="story real"><div class="eyebrow">What really happened</div><div>${esc(c.real)}</div><div class="lesson">${esc(c.lesson)}</div></div>` : '');
 }
 
-// Leaderboard for one role, ranked by net money (prize included once awarded).
+// "+1", "−2", or "±0" for a change since the start.
+export const signed = n => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '±0');
+export const deltaHtml = n => `<span class="delta ${n > 0 ? 'up' : n < 0 ? 'down' : ''}">${signed(n)}</span>`;
+
+// Leaderboard for one role, ranked by profit (prize included once awarded).
 export function leaderboard(game, role, meSlug, { compact = false } = {}) {
   const rows = Object.values(game.teams).filter(t => t.role === role).sort((a, b) => netOf(game, b) - netOf(game, a));
   if (!rows.length) return `<p class="small muted">No ${roleName(role)}s yet.</p>`;
-  return `<table class="lb"><thead><tr><th>${role === 'brand' ? 'Brands' : 'Influencers'}</th><th title="Money on hand to spend">Cash</th><th title="Money gained or lost since the start (the score)">Gain</th><th>Att</th><th>Trust</th>${compact ? '' : '<th>Risk</th>'}<th>Space</th></tr></thead><tbody>${rows.map((t, i) => `
+  return `<table class="lb"><thead><tr><th>${role === 'brand' ? 'Brands' : 'Influencers'}</th><th title="Money on hand to spend">Cash</th><th title="Money made or lost since the start. This is the score.">Profit</th><th>Att</th><th title="Trust now, and how much it has gone up or down since the start">Trust</th>${compact ? '' : '<th>Risk</th>'}<th>Space</th></tr></thead><tbody>${rows.map((t, i) => `
     <tr class="${t.slug === meSlug ? 'you' : ''}"><td>${game.phase === 'finished' && i === 0 ? '🏆 ' : ''}<span class="dot ${t.role}" style="background:${t.color}"></span>${esc(t.name)}<span class="tag">${t.slug === meSlug ? 'YOU' : t.bot ? `${t.bot.toUpperCase()} BOT` : ''}</span></td>
-    <td>${money(t.money)}</td><td>${money(netOf(game, t))}</td><td>${t.att}</td><td>${t.trust}</td>${compact ? '' : `<td>${t.risk}</td>`}<td>${t.finished ? '🏁' : t.pos}</td></tr>`).join('')}</tbody></table>`;
+    <td>${money(t.money)}</td><td>${money(netOf(game, t))}</td><td>${t.att}</td><td>${t.trust} ${deltaHtml(trustChangeOf(t))}</td>${compact ? '' : `<td>${t.risk}</td>`}<td>${t.finished ? '🏁' : t.pos}</td></tr>`).join('')}</tbody></table>`;
 }
 
 export function feedHtml(game, n = 40) {

@@ -51,7 +51,7 @@ With more influencer teams than brand teams, one NPC brand offer per missing tea
 
 ## Team stats and the economy
 
-Every team tracks four stats: money, attention (0 to 100), trust (1 to 10), and risk points. Score is net money gained, final money minus starting money plus any finish prize, and teams are ranked only against teams in the same role.
+Every team tracks four stats: money, attention (0 to 100), trust (1 to 10), and risk points. Score is profit, final money minus starting money plus any finish prize, and teams are ranked only against teams in the same role. Screens show cash on hand beside profit, so a team that has spent more than it has earned sees a negative profit, not a negative balance; cash never drops below $0. Trust is shown with its change since the start in the same way.
 
 Attention moves fast. Each round a team gains its profile's base attention plus any gains from contracts and events, and at the end of the round it loses a quarter of its attention, rounded down. Trust moves slowly and never decays; it changes only through events, backlash, repeated partnerships, and influencers holding two contracts.
 
@@ -212,7 +212,7 @@ The look is an original confectionery fantasy: a sugar-bright factory world with
 
 The style takes its cue from Willy Wonka but uses none of the book's or films' characters or imagery. All text sits on solid panels so the colors never cost legibility, in both light and dark display modes.
 
-The main screen puts the winding board in the center, divided into themed districts: a launch zone, a trending strip, backlash alley, and a deal district near the finish. Two leaderboards sit on the right, one for brands and one for influencers, each with net money, attention, trust, and deals signed per team, plus arrows for movement since last round. A feed ticker along the bottom shows posts and signings as they happen.
+The main screen puts the winding board in the center, divided into themed districts: a launch zone, a trending strip, backlash alley, and a deal district near the finish. Two leaderboards sit on the right, one for brands and one for influencers, each with cash, profit, attention, and trust with its change since the start, plus arrows for movement since last round. A feed ticker along the bottom shows posts and signings as they happen.
 
 Events interrupt with a full-screen alert and a countdown, then shrink to a corner panel while teams react. The alert names the true story behind the card, and a Learn more button opens its panel: the context that bears on the decision, what the real brand or influencer did, and the source. After resolution, the panel shows what really happened beside the class's choices. A contract appears as a line joining brand and influencer pieces. At the reveal, selections flip as cards at once; lines draw to the brands chosen, and offers not selected fade out.
 
@@ -234,7 +234,7 @@ The code stays on screen until the student closes it, and reopening the join lin
 | --- | --- | --- |
 | Success or lucky accident | Our flops | For each flop that targeted the team: its trust going in, its response, and the attention and trust it gained or lost |
 | Who won the moment | Attention and spaces gained from other teams' events | Sum of attention and board spaces gained by reacting to or joining events where the team was not the target |
-| Attention or lasting value | Attention and trust by round | A two-line chart of the team's attention and trust across rounds, beside its net money |
+| Attention or lasting value | Attention and trust by round | A two-line chart of the team's attention and trust across rounds, beside its profit |
 
 The summary does not report dice luck. In simulation, a team's roll total correlated with its rank within its role at only about 0.1 to 0.2, and a replay with average rolls could not separate dice from other chance effects.
 

@@ -27,7 +27,7 @@ real social media flops. Each event card cites the true story behind it.
 7. **Start the next round**, or after round 6 **Extend to 8 rounds** or **Finish the game**.
 
 Set the participation code in the lobby; every phone shows it at the end.
-Leaderboards show **Cash** (money on hand, never below $0) and **Gain** (the score: money gained or lost since the start, so it goes negative after spending).
+Leaderboards show **Cash** (money on hand, never below $0), **Profit** (the score: money made or lost since the start, so it goes negative after spending) and **Trust** with its change since the start (for example `8 +1`).
 **+ Bot brand / + Bot influencer / Even the sides** add computer teams when one side is short.
 **Download CSV** exports one row per team per round.
 

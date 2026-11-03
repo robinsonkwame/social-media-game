@@ -3,8 +3,8 @@ import { createApi, startPolling } from './api.js';
 import { createBoard } from './board.js';
 import { CFG, PROFILES, TAGS, FLOP, band, BAND_NAME, FORK1, fork2Index } from './rules.js';
 import { CARDS } from './cards.js';
-import { inRange, spaceOf, lengthOf, choicesFor, netOf, money } from './engine.js';
-import { $, esc, storyHtml, leaderboard, feedHtml, HOW_TO, PHASE_LABEL, roleName } from './ui.js';
+import { inRange, spaceOf, lengthOf, choicesFor, netOf, trustChangeOf, money } from './engine.js';
+import { $, esc, storyHtml, leaderboard, feedHtml, HOW_TO, PHASE_LABEL, roleName, signed } from './ui.js';
 
 const api = await createApi();
 const solo = api.mode === 'solo';  // solo practice: you run the host steps yourself
@@ -106,9 +106,9 @@ function renderStatus() {
   $('meRole').textContent = `${t.profile} ${roleName(t.role)}${t.tag ? ' · ' + t.tag : ''}`;
   const chance = Math.round(Math.max(0, Math.min(6, t.risk - 1)) / 6 * 100);
   $('meStats').innerHTML = `
-    <div class="stat"><div class="label">Cash</div><div class="value">${money(t.money)}</div><div class="small muted">${t.money - t.start >= 0 ? 'up' : 'down'} ${money(Math.abs(t.money - t.start))} since the start</div></div>
+    <div class="stat"><div class="label">Cash</div><div class="value">${money(t.money)}</div><div class="small muted">Profit ${money(netOf(S.game, t))}</div></div>
     <div class="stat"><div class="label">Attention</div><div class="value">${t.att}</div><div class="bar"><div style="width:${t.att}%"></div></div></div>
-    <div class="stat"><div class="label">Trust</div><div class="value">${t.trust}<span class="small muted">/10 ${BAND_NAME[band(t.trust)]}</span></div></div>
+    <div class="stat"><div class="label">Trust</div><div class="value">${t.trust}<span class="small muted">/10 ${BAND_NAME[band(t.trust)]}</span></div><div class="small muted">${signed(trustChangeOf(t))} since the start</div></div>
     <div class="stat"><div class="label">Risk</div><div class="value ${chance >= 33 ? 'risk-hi' : ''}">${t.risk}</div><div class="small muted">${chance}% backlash</div></div>`;
   const c = t.contracts.map(k => `${esc(g.teams[k.partner]?.name || k.partner)} (${k.left} round${k.left > 1 ? 's' : ''} left)`).join(', ');
   $('meContracts').innerHTML = `Space ${t.pos} of ${lengthOf(t)}${t.finished ? ' · finished!' : ''} · Contracts: ${c || 'none'}`;
@@ -308,7 +308,7 @@ function finishedCard(g, t) {
     ${g.code ? `<div class="big-code" aria-label="Participation code">${esc(g.code)}</div>` : '<p class="prompt">Your teacher will give you the participation code.</p>'}`;
   return `${code}
     ${head('Game over', `${g.rounds} rounds`)}
-    <p class="prompt">${winner ? `${esc(winner.name)} ${esc(g.winner.how)} and won ${money(CFG.prize)}. ` : ''}You finished <b>#${rank}</b> of ${peers.length} ${roleName(role)}s with ${money(netOf(g, t))}.</p>
+    <p class="prompt">${winner ? `${esc(winner.name)} ${esc(g.winner.how)} and won ${money(CFG.prize)}. ` : ''}You finished <b>#${rank}</b> of ${peers.length} ${roleName(role)}s with ${money(netOf(g, t))} profit and trust ${t.trust} (${signed(trustChangeOf(t))}).</p>
     <div class="story"><div class="eyebrow">Success or lucky accident? · Our flops</div><ul>${flops}</ul></div>
     <div class="story"><div class="eyebrow">Who won the moment?</div>From other teams' events you gained <b class="num">${t.fromOthers.att}</b> attention and <b class="num">${t.fromOthers.spaces}</b> spaces.</div>
     <div class="story"><div class="eyebrow">Attention or lasting value?</div>${chart}</div>`;
