@@ -157,7 +157,7 @@ function readyCard(g, t) {
 function rollLine(g, t) {
   const r = t.lastRoll;
   const back = (g.log || []).some(l => l.r === g.round && l.text.startsWith(t.name + ' rolled') && l.text.includes('BACKLASH'));
-  return t.finished ? 'You are at the finish!' : `You rolled ${r}${back ? ' and got a backlash' : ''}. You're on a ${spaceOf(t).type} space.`;
+  return t.finished ? 'You are at the finish!' : `You rolled ${r}${back ? ' and got a backlash' : ''}. You're on ${/^[AEIOU]/.test(spaceOf(t).type) ? 'an' : 'a'} ${spaceOf(t).type} space.`;
 }
 
 function dealsCard(g, t) {
