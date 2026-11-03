@@ -1,0 +1,13 @@
+{
+  "name": "social-media-game",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes netlify-cli@23.15.1 dev",
+    "preview": "python3 -m http.server 8787 -d public",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "@netlify/blobs": "10.7.13"
+  }
+}

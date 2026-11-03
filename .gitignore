@@ -1,0 +1,24 @@
+node_modules/
+.netlify/
+.env
+.DS_Store
+deno.lock
+.claude/
+
+# Copied news articles and posts used as research notes. They are other
+# people's copyrighted text, so they stay out of this public repo; the game
+# cites and links them instead (see event-cards.md).
+1 - Gap*.md
+2 - Sherwin*.md
+3 IHOP - Dining Out
+4 apple crush.md
+5 - coca cola - holiday.md
+*.pdf
+strategy - how to make good social media ads.md
+
+# Simulation output (regenerate with sim/sweep.py and sim/refine.py)
+sim/*_results.json
+sim/__pycache__/
+
+# The board image lives in public/img/
+/candy-village-background.jpg

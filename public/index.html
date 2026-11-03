@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Viral Path</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main class="stack" id="joinView" hidden style="max-width: 900px; margin: 0 auto;">
+  <section class="card stack">
+    <div><div class="eyebrow">TISA3630 · Social media game</div><h1 style="font-size: 34px">Viral Path</h1>
+    <p class="muted">A racing game about real social media flops. Here's everything you need to know.</p></div>
+    <div id="howtoSlot"></div>
+  </section>
+  <form class="card stack" id="joinForm">
+    <h2>Join the game</h2>
+    <p class="small muted">One phone per team is enough. Teammates who type the same team name join the same team.</p>
+    <div class="field"><label for="teamName">Team name</label><input id="teamName" maxlength="24" autocomplete="off" required></div>
+    <div class="field"><label>Pick a profile</label><div class="picker" id="profilePicker"></div></div>
+    <div class="field" id="tagField" hidden><label for="tag">Your trend tag</label><select id="tag"></select>
+      <span class="small muted">When your tag trends, brands that sign you get all of your attention.</span></div>
+    <p class="small muted" id="sideCount"></p>
+    <p class="error" id="joinError" role="alert"></p>
+    <div class="row"><button class="btn primary" type="submit" id="joinBtn">Join the race</button></div>
+  </form>
+</main>
+
+<div class="app" id="gameView" hidden>
+  <div class="board-wrap">
+    <svg id="board" viewBox="0 0 100 100" role="img" aria-label="Candy village game board"></svg>
+    <div class="legend" id="legend"></div>
+  </div>
+  <div class="side">
+    <div class="statusbar"><span class="sign">Round <b id="roundSign">–</b> of <span id="roundsTotal">6</span></span><span class="sign">Trend: <b id="trendSign">—</b></span><button class="btn" id="rulesBtn" type="button">How to play</button></div>
+    <section class="card stack" id="phaseCard" aria-live="polite"></section>
+    <section class="card stack">
+      <div class="phase-head"><h3 id="meName">Your team</h3><span class="chip" id="meRole"></span></div>
+      <div class="me" id="meStats"></div>
+      <div class="small muted" id="meContracts"></div>
+    </section>
+    <section class="card stack">
+      <div class="phase-head"><h3>Leaderboards</h3><span class="small muted">ranked within each role</span></div>
+      <div class="lb-wrap" id="lbBrand"></div>
+      <div class="lb-wrap" id="lbInfl"></div>
+    </section>
+    <section class="card stack">
+      <h3>Feed</h3>
+      <div class="feed" id="feed"></div>
+    </section>
+  </div>
+</div>
+<div id="overlayRoot"></div>
+<script type="module" src="js/player.js"></script>
+</body>
+</html>
