@@ -28,7 +28,7 @@ export function leaderboard(game, role, meSlug, { compact = false } = {}) {
   const rows = Object.values(game.teams).filter(t => t.role === role).sort((a, b) => netOf(game, b) - netOf(game, a));
   if (!rows.length) return `<p class="small muted">No ${roleName(role)}s yet.</p>`;
   return `<table class="lb"><thead><tr><th>${role === 'brand' ? 'Brands' : 'Influencers'}</th><th>Net $</th><th>Att</th><th>Trust</th>${compact ? '' : '<th>Risk</th>'}<th>Space</th></tr></thead><tbody>${rows.map((t, i) => `
-    <tr class="${t.slug === meSlug ? 'you' : ''}"><td>${game.phase === 'finished' && i === 0 ? '🏆 ' : ''}<span class="dot ${t.role}" style="background:${t.color}"></span>${esc(t.name)}<span class="tag">${t.slug === meSlug ? 'YOU' : t.bot ? 'BOT' : ''}</span></td>
+    <tr class="${t.slug === meSlug ? 'you' : ''}"><td>${game.phase === 'finished' && i === 0 ? '🏆 ' : ''}<span class="dot ${t.role}" style="background:${t.color}"></span>${esc(t.name)}<span class="tag">${t.slug === meSlug ? 'YOU' : t.bot ? `${t.bot.toUpperCase()} BOT` : ''}</span></td>
     <td>${money(netOf(game, t))}</td><td>${t.att}</td><td>${t.trust}</td>${compact ? '' : `<td>${t.risk}</td>`}<td>${t.finished ? '🏁' : t.pos}</td></tr>`).join('')}</tbody></table>`;
 }
 

@@ -14,6 +14,10 @@ export function isDebug() {
 }
 
 export async function createApi() {
+  if (document.documentElement.dataset.mode === 'solo') {
+    const m = await import('./solo-api.js');
+    return m.createSoloApi();
+  }
   if (isDebug()) {
     const m = await import('./mock-api.js');
     return m.createMockApi();

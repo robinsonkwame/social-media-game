@@ -14,7 +14,7 @@ real social media flops. Each event card cites the true story behind it.
 |---|---|---|
 | `/host` | the teacher | Controls on the left; the projected board, event panel and leaderboards on the right. You decide when to roll, when deals close, and when the next event fires. You can also join a team yourself. |
 | `/` | each team, on a phone | Join with a team name and profile, then follow the round: deals, final call, timed reactions with **Learn more**, and the participation code at the end. |
-| `/solo` | anyone | Practice: one team against five bots, no server. |
+| `/solo` | anyone | Practice: one team against five bots on the same rules, with you pressing the teacher's buttons. Runs in the browser; a reload picks up where you left off. |
 
 ### Running a round from `/host`
 
@@ -82,5 +82,7 @@ npm test
 
 ## Credits
 
-The candy village background is a Creative Commons licensed image; add its
-attribution here.
+Board background: "Candy Village Background" from
+[PublicDomainPictures.net](https://www.publicdomainpictures.net/pictures/530000/velka/candy-village-background.jpg),
+released under [CC0 1.0 Universal (Public Domain Dedication)](https://creativecommons.org/publicdomain/zero/1.0/).
+No attribution is required; it is credited here as a courtesy.

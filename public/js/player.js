@@ -7,7 +7,8 @@ import { inRange, spaceOf, lengthOf, choicesFor, netOf, money } from './engine.j
 import { $, esc, storyHtml, leaderboard, feedHtml, HOW_TO, PHASE_LABEL, roleName } from './ui.js';
 
 const api = await createApi();
-const KEY = 'vp:team';
+const solo = api.mode === 'solo';  // solo practice: you run the host steps yourself
+const KEY = solo ? 'vp:soloTeam' : 'vp:team';
 const load = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
 const save = v => { try { v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY); } catch { /* private mode */ } };
 
@@ -79,7 +80,7 @@ function onState(s) {
   if (!slug) {
     const ts = Object.values(g.teams);
     const nb = ts.filter(t => t.role === 'brand').length;
-    $('sideCount').textContent = ts.length ? `Joined so far: ${nb} brand${nb === 1 ? '' : 's'}, ${ts.length - nb} influencer${ts.length - nb === 1 ? '' : 's'}.` : '';
+    if ($('sideCount')) $('sideCount').textContent = ts.length ? `Joined so far: ${nb} brand${nb === 1 ? '' : 's'}, ${ts.length - nb} influencer${ts.length - nb === 1 ? '' : 's'}.` : '';
     return;
   }
   if (!g.teams[slug]) {
@@ -134,7 +135,7 @@ function renderPhase(force = false) {
     lobby: lobbyCard, ready: readyCard, deals: dealsCard, final: finalCard,
     dealt: dealtCard, event: eventCard, results: resultsCard, finished: finishedCard,
   }[g.phase]?.(g, t) ?? '';
-  $('phaseCard').innerHTML = html;
+  $('phaseCard').innerHTML = html + (solo ? soloSteps(g, t) : '');
   updateTicker();
   tickTimer();
 }
@@ -149,7 +150,7 @@ function lobbyCard(g, t) {
 
 function readyCard(g, t) {
   return head(`Round ${g.round}`, 'Get ready') + `
-    <p class="prompt">Watch the main screen. The teacher rolls for every team at once.</p>
+    <p class="prompt">${solo ? 'Roll when you are ready. Everyone rolls at once.' : 'Watch the main screen. The teacher rolls for every team at once.'}</p>
     <p class="small muted">If your risk (${t.risk}) is higher than your roll, you get a backlash and slide back ${CFG.backlashSlide} spaces. You can buy risk down in the deal window.</p>`;
 }
 
@@ -195,7 +196,7 @@ function dealsCard(g, t) {
     ${needFork1 ? forkField(1, draft.pref1) : ''}${needFork2 ? forkField(2, draft.pref2) : ''}
     ${offer}
     <div class="row"><button type="button" class="btn primary" data-send="deal" ${busy ? 'disabled' : ''}>${saved ? 'Update my choices' : 'Lock in my choices'}</button></div>
-    ${saved ? `<p class="small okline">Saved. You can change it until the teacher starts the final call.</p>` : ''}${flashLine()}`;
+    ${saved ? `<p class="small okline">Saved. You can change it until ${solo ? 'you finish the deal window' : 'the teacher starts the final call'}.</p>` : ''}${flashLine()}`;
 }
 
 function finalCard(g, t) {
@@ -255,7 +256,7 @@ function eventCard(g, t) {
     const secs = ((S.myAct.at - e.openedAt) / 1000).toFixed(1);
     return head(title, 'Locked in') + `<p class="prompt">${esc(prompt)}</p>${timer}
       <p class="okline">You chose ${esc(S.myAct.choice === 'Out' ? 'Stay out' : S.myAct.choice)} at ${secs}s.</p>
-      <p class="small muted">Results appear when the teacher closes the event.</p>${learn}<div class="small muted" id="botTicker"></div>`;
+      <p class="small muted">${solo ? 'Score the event when you are ready.' : 'Results appear when the teacher closes the event.'}</p>${learn}<div class="small muted" id="botTicker"></div>`;
   }
   let choices;
   if (c.kind === 'flop' && e.target === slug) choices = Object.keys(FLOP).map(r => [r, r, respHint(r, t, c)]);
@@ -275,7 +276,7 @@ function resultsCard(g, t) {
     ${my ? `<p class="prompt">${esc(my)}</p>` : ''}
     <ul class="small">${r.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
     ${storyHtml(e.card, true)}
-    <p class="small muted">${g.round < g.rounds ? 'The teacher starts the next round when everyone is ready.' : 'That was the last round. Waiting for the teacher.'}</p>`;
+    ${solo ? '' : `<p class="small muted">${g.round < g.rounds ? 'The teacher starts the next round when everyone is ready.' : 'That was the last round. Waiting for the teacher.'}</p>`}`;
 }
 
 function finishedCard(g, t) {
@@ -294,13 +295,60 @@ function finishedCard(g, t) {
     ${h.map((p, i) => `<text x="${x(i)}" y="${H - 6}" text-anchor="middle">R${p.round}</text>`).join('')}
     <text x="${pad}" y="12">attention (0–100)</text><text x="${W - pad}" y="12" text-anchor="end">trust (0–10, dashed)</text></svg>` : '';
   const flops = t.flops.length ? t.flops.map(f => `<li>Round ${f.round}, ${esc(f.card)}: trust ${f.trustIn} going in (${BAND_NAME[band(f.trustIn)]}), chose ${esc(f.response)}: +${f.dAtt} attention, ${f.dTrust >= 0 ? '+' : ''}${f.dTrust} trust, ${f.step >= 0 ? '+' : ''}${f.step} spaces.</li>`).join('') : '<li>No flop targeted your team.</li>';
-  return `<div class="eyebrow">Participation code</div>
-    ${g.code ? `<div class="big-code" aria-label="Participation code">${esc(g.code)}</div>` : '<p class="prompt">Your teacher will give you the participation code.</p>'}
+  const code = solo ? '' : `<div class="eyebrow">Participation code</div>
+    ${g.code ? `<div class="big-code" aria-label="Participation code">${esc(g.code)}</div>` : '<p class="prompt">Your teacher will give you the participation code.</p>'}`;
+  return `${code}
     ${head('Game over', `${g.rounds} rounds`)}
     <p class="prompt">${winner ? `${esc(winner.name)} ${esc(g.winner.how)} and won ${money(CFG.prize)}. ` : ''}You finished <b>#${rank}</b> of ${peers.length} ${roleName(role)}s with ${money(netOf(g, t))}.</p>
     <div class="story"><div class="eyebrow">Success or lucky accident? · Our flops</div><ul>${flops}</ul></div>
     <div class="story"><div class="eyebrow">Who won the moment?</div>From other teams' events you gained <b class="num">${t.fromOthers.att}</b> attention and <b class="num">${t.fromOthers.spaces}</b> spaces.</div>
     <div class="story"><div class="eyebrow">Attention or lasting value?</div>${chart}</div>`;
+}
+
+// ---------------------------------------------------------------- solo steps
+
+// In solo practice the player presses the teacher's buttons.
+function soloSteps(g, t) {
+  const steps = {
+    ready: [['roll', 'Roll the dice']],
+    deals: [['finalCall', 'Done with deals']],
+    final: [['closeDeals', 'Close deals']],
+    dealt: [['fire', 'Fire the next event']],
+    event: [['resolve', S.myAct || !choicesFor(g, t).length ? 'Score the event' : 'Skip and score the event']],
+    results: g.round < g.rounds ? [['next', `Start round ${g.round + 1}`]]
+      : [...(g.rounds < CFG.maxRounds ? [['extend', `Extend to ${CFG.maxRounds} rounds`]] : []), ['finish', 'Finish the game']],
+    finished: [['again', 'Play again']],
+  }[g.phase] || [];
+  if (!steps.length) return '';
+  return `<div class="row">${steps.map(([a, label], i) => `<button type="button" class="btn ${i === steps.length - 1 ? 'primary' : ''}" data-host="${a}" ${busy ? 'disabled' : ''}>${esc(label)}</button>`).join('')}</div>
+    ${g.phase === 'finished' ? '' : '<p class="small muted" style="margin:0">In class, the teacher presses this.</p>'}`;
+}
+
+async function soloHost(action) {
+  const g = S.game, t = me();
+  busy = true; flash = ''; renderPhase(true);
+  try {
+    // send unsaved choices first, so pressing the step button never loses them
+    if (action === 'finalCall' && !S.myAct) await api.act(slug, { buy: draft.buy, pref1: draft.pref1, pref2: draft.pref2, offer: draft.offerTo ? { to: draft.offerTo, amt: draft.amt } : null });
+    if (action === 'closeDeals' && !S.myAct) {
+      if (t.role === 'infl' && draft.accept?.length) await api.act(slug, { accept: draft.accept });
+      const o = g.offers.find(x => x.brand === slug);
+      if (t.role === 'brand' && o?.notice && !o.raised && draft.raise > o.amt) await api.act(slug, { raise: draft.raise });
+    }
+    if (action === 'again') {
+      await api.host('reset');
+      slug = ''; save('');
+      showJoin('');
+      return;
+    }
+    await api.host(action);
+  } catch (err) {
+    flash = err.message;
+  } finally {
+    busy = false;
+    poller.refresh();
+    if (slug) renderPhase(true);
+  }
 }
 
 // ---------------------------------------------------------------- live bits
@@ -357,6 +405,7 @@ $('phaseCard').addEventListener('click', async e => {
   else if (b.dataset.send === 'raise') send({ raise: draft.raise });
   else if (b.dataset.send === 'accept') send({ accept: draft.accept });
   else if (b.dataset.choice) send({ choice: b.dataset.choice });
+  else if (b.dataset.host) soloHost(b.dataset.host);
   else if (b.hasAttribute('data-leave')) {
     try { await api.leave(slug); } catch (err) { flash = err.message; renderPhase(true); return; }
     slug = ''; save(''); showJoin('');
