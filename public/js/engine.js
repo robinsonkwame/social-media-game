@@ -34,7 +34,7 @@ function say(game, text) {
 export function newGame(now = Date.now(), rng = Math.random) {
   return {
     id: Math.floor(rng() * 36 ** 8).toString(36).padStart(8, '0'),
-    phase: 'lobby', round: 0, rounds: CFG.rounds, closing: null,
+    phase: 'lobby', round: 0, rounds: CFG.rounds, closing: null, reactionSeconds: CFG.reactionSeconds,
     trend: null, stamp: 0, step: 0, trails: {},
     teams: {}, offers: [], event: null, finishOrder: [], partnerships: [], flopLog: [],
     log: [], winner: null, code: '', createdAt: now, updatedAt: now,
@@ -378,18 +378,44 @@ export function fireEvent(game, now = Date.now(), rng = Math.random) {
   const bots = {};
   for (const t of live.filter(t => t.bot)) {
     if (c.kind === 'flop') {
-      if (t === target) { const [choice, why] = botTargetResponse(t, rng); bots[t.slug] = { choice, why, at: now + botDelayMs(t, rng) }; }
-      else { const [choice, why] = botReaction(t, target, rng); bots[t.slug] = { choice, why, at: now + botDelayMs(t, rng) }; }
+      if (t === target) { const [choice, why] = botTargetResponse(t, rng); bots[t.slug] = { choice, why, delay: botDelayMs(t, rng) }; }
+      else { const [choice, why] = botReaction(t, target, rng); bots[t.slug] = { choice, why, delay: botDelayMs(t, rng) }; }
     } else if (card === 'Meme Format') {
-      bots[t.slug] = { choice: botJoins(t, rng) ? 'Join' : 'Out', why: STRATS[t.bot].why, at: now + botDelayMs(t, rng) };
+      bots[t.slug] = { choice: botJoins(t, rng) ? 'Join' : 'Out', why: STRATS[t.bot].why, delay: botDelayMs(t, rng) };
     }
   }
+  // The card goes up first with no clock, so teams can read the true story.
+  // The countdown starts when the host calls startTimer.
   game.event = {
     card, title: titleOf(card), kind: c.kind, target: target ? target.slug : null,
-    openedAt: now, closesAt: now + CFG.reactionSeconds * 1000, bots, result: null,
+    shownAt: now, openedAt: null, closesAt: null, bots, result: null,
   };
   game.phase = 'event';
   say(game, target ? `Event: ${titleOf(card)} hits ${target.name}.` : `Event: ${titleOf(card)}.`);
+}
+
+export function setReactionSeconds(game, seconds) {
+  const s = Math.round(Number(seconds));
+  if (!(s >= 10 && s <= 300)) throw new GameError('Pick between 10 and 300 seconds');
+  game.reactionSeconds = s;
+}
+
+export function startTimer(game, now = Date.now()) {
+  const e = game.event;
+  if (game.phase !== 'event' || !e) throw new GameError('Show an event first');
+  if (e.openedAt) throw new GameError('The countdown is already running');
+  e.openedAt = now;
+  e.closesAt = now + (game.reactionSeconds || CFG.reactionSeconds) * 1000;
+  for (const b of Object.values(e.bots)) b.at = now + b.delay;
+  say(game, `The ${game.reactionSeconds || CFG.reactionSeconds}-second countdown started.`);
+}
+
+export function addTime(game, seconds, now = Date.now()) {
+  const e = game.event;
+  if (game.phase !== 'event' || !e || !e.openedAt) throw new GameError('Start the countdown first');
+  const s = Math.max(5, Math.min(120, Math.round(Number(seconds) || 15)));
+  e.closesAt = Math.max(e.closesAt, now) + s * 1000;
+  say(game, `The host added ${s} seconds.`);
 }
 
 // Which choices a team has in the open event window, or [] if none.
@@ -403,6 +429,7 @@ export function choicesFor(game, t) {
 
 export function checkReaction(game, t, act, now) {
   if (game.phase !== 'event' || game.closing === 'event') throw new GameError('The reaction window is closed');
+  if (!game.event.openedAt) throw new GameError('Choices open when the countdown starts');
   if (now > game.event.closesAt + CFG.graceMs) throw new GameError('Time ran out for this event');
   const options = choicesFor(game, t);
   if (!options.includes(act.choice)) throw new GameError('That choice is not available');
@@ -411,6 +438,7 @@ export function checkReaction(game, t, act, now) {
 
 export function resolveEvent(game, acts, now = Date.now(), rng = Math.random) {
   if (game.phase !== 'event') throw new GameError('Fire an event first');
+  if (!game.event.openedAt) startTimer(game, now);  // scored without a countdown: only bots answer
   beginStep(game);
   const e = game.event, c = CARDS[e.card];
   const deadline = e.closesAt + CFG.graceMs;

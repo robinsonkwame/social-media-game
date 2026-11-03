@@ -40,8 +40,7 @@ const STEPS = {
   ready: [['roll', 'Roll the dice', 'Rolls for every team at once, moves the pieces, checks risk, and reveals the trend. Then the deal window opens.']],
   deals: [['finalCall', 'Start the final call', 'Applies risk buy-downs and road choices and collects offers. Brands whose influencer has several offers may raise once.']],
   final: [['closeDeals', 'Close deals', 'Influencers\' choices are final and contracts are signed.']],
-  dealt: [['fire', 'Fire the next event', `Draws a true-story event card and opens a ${CFG.reactionSeconds}-second reaction window on every phone.`]],
-  event: [['resolve', 'Close the event and score it', 'Applies everyone\'s choice, speed bonuses and movement, then ends the round.']],
+  dealt: [['fire', 'Show the next event', 'Puts a true-story event card on every screen with no clock, so teams can read the story. You start the countdown next.']],
 };
 
 function phaseButtons(g) {
@@ -53,6 +52,10 @@ function phaseButtons(g) {
     return out;
   }
   if (g.phase === 'finished') return [];
+  if (g.phase === 'event') {
+    if (!g.event.openedAt) return [['startTimer', `Start the ${g.reactionSeconds}-second countdown`, 'Opens the choices on every phone. The first two teams to react get bonus spaces.']];
+    return [['addTime', '+15 seconds', 'Gives everyone a little longer.'], ['resolve', 'Close the event and score it', 'Applies everyone\'s choice, speed bonuses and movement, then ends the round.']];
+  }
   return STEPS[g.phase] || [];
 }
 
@@ -62,11 +65,15 @@ function renderControls() {
   const humans = teams.filter(t => !t.bot);
   let status = '';
   if (g.phase === 'deals' || g.phase === 'final') status = `<p class="small muted">${S.submitted.length} of ${humans.length} team${humans.length === 1 ? '' : 's'} sent choices.</p>`;
-  if (g.phase === 'event') status = `<p class="small muted">${S.submitted.length} of ${humans.filter(t => !t.finished).length} teams answered.</p>`;
+  if (g.phase === 'event') status = g.event.openedAt ? `<p class="small muted">${S.submitted.length} of ${humans.filter(t => !t.finished).length} teams answered.</p>` : '<p class="small muted">Reading time. No clock is running.</p>';
   $('phaseActions').innerHTML = `<div class="eyebrow">${esc(PHASE_LABEL[g.phase] || g.phase)}${g.round ? ` · round ${g.round} of ${g.rounds}` : ''}</div>` + status +
     phaseButtons(g).map(([a, label, hint], i) => `<button class="btn ${i === phaseButtons(g).length - 1 ? 'primary' : ''}" data-action="${a}" type="button" ${busy ? 'disabled' : ''}>${esc(label)}</button><p class="small muted" style="margin:0">${esc(hint)}</p>`).join('') +
     (g.phase === 'finished' ? '<p class="small">Game over. Download the CSV, or reset to play again.</p>' : '');
   if (document.activeElement !== $('codeInput')) $('codeInput').value = g.code || '';
+  if (document.activeElement !== $('timerSelect')) {
+    const opts = [...new Set([...CFG.reactionChoices, g.reactionSeconds])].sort((a, b) => a - b);
+    $('timerSelect').innerHTML = opts.map(v => `<option value="${v}" ${v === g.reactionSeconds ? 'selected' : ''}>${v} seconds</option>`).join('');
+  }
   $('unstickBtn').hidden = !g.closing;
   $('teamTable').innerHTML = teams.length ? teams.map(t => `<tr><td><span class="dot ${t.role}" style="background:${t.color}"></span>${esc(t.name)}${t.bot ? ' <span class="tag">BOT</span>' : ''}</td><td class="small muted">${roleName(t.role)}</td>
     <td style="text-align:right"><button class="btn" data-kick="${t.slug}" type="button">${armed === 'kick:' + t.slug ? 'Confirm' : 'Remove'}</button></td></tr>`).join('') : '<tr><td class="small muted">No teams yet.</td></tr>';
@@ -90,7 +97,7 @@ async function hostAction(action, payload = {}) {
 $('controls').addEventListener('click', e => {
   const b = e.target.closest('button');
   if (!b || b.disabled) return;
-  if (b.dataset.action) hostAction(b.dataset.action);
+  if (b.dataset.action) hostAction(b.dataset.action, b.dataset.action === 'addTime' ? { seconds: 15 } : {});
   else if (b.dataset.bots) hostAction('bots', { role: b.dataset.bots, count: 1 });
   else if (b.dataset.kick) {
     if (armed === 'kick:' + b.dataset.kick) { armed = ''; hostAction('kick', { slug: b.dataset.kick }); }
@@ -125,6 +132,7 @@ function renderPlay() {
   if (mine) $('playNote').innerHTML = `You're playing as <b>${esc(mine.name)}</b>. <a href="${playerUrl()}" target="_blank" rel="noopener">Open my player screen</a>`;
 }
 $('codeBtn').addEventListener('click', () => hostAction('code', { code: $('codeInput').value }));
+$('timerSelect').addEventListener('change', e => hostAction('timer', { seconds: Number(e.target.value) }));
 $('unstickBtn').addEventListener('click', () => hostAction('unstick'));
 $('resetBtn').addEventListener('click', () => {
   if (armed === 'reset') { armed = ''; hostAction('reset'); }
@@ -169,7 +177,7 @@ function qrSvg(text) {
 
 function renderStage() {
   const g = S.game;
-  const key = JSON.stringify([g.phase, g.round, g.step, g.event?.card, g.event?.result ? 1 : 0, Object.keys(g.teams).length, g.code, g.partnerships.length, g.offers.length]);
+  const key = JSON.stringify([g.phase, g.round, g.step, g.event?.card, g.event?.openedAt, g.event?.result ? 1 : 0, Object.keys(g.teams).length, g.code, g.partnerships.length, g.offers.length]);
   if (key === stageKey) return tickCountdown();
   stageKey = key;
   const teams = Object.values(g.teams);
@@ -207,11 +215,11 @@ function renderStage() {
     case 'event': {
       const e = g.event, c = CARDS[e.card], target = e.target ? g.teams[e.target] : null;
       const prompt = c.kind === 'flop' ? `${c.others(target.name)} ${target.name}: Delete, Apologize, Ignore, or Lean in? Everyone else: Support, Critique, or Stay out?` : c.prompt;
-      h = `<div class="phase-head"><h2 class="event-title">${esc(e.title)}</h2><span class="countdown" id="countdown"></span></div>
-        <div class="eyebrow">Based on a true story · ${esc(c.story)}</div>
+      h = `<div class="phase-head"><h2 class="event-title">${esc(e.title)}</h2><span class="countdown" id="countdown">${e.openedAt ? '' : 'Read'}</span></div>
         <p class="event-prompt">${esc(prompt)}</p>
-        <div class="timer" aria-hidden="true"><div id="timerBar" style="width:100%"></div></div>
-        <p class="small muted">Answer on your phone. The first two teams to react move ahead 2 and 1 extra spaces.</p>`;
+        ${e.openedAt ? '<div class="timer" aria-hidden="true"><div id="timerBar" style="width:100%"></div></div><p class="small muted">Answer on your phone. The first two teams to react move ahead 2 and 1 extra spaces.</p>'
+          : `<p class="small muted">Reading time. Choices open when the ${g.reactionSeconds}-second countdown starts.</p>`}
+        ${storyHtml(e.card, false)}`;
       break;
     }
     case 'results': {
@@ -239,7 +247,7 @@ function renderStage() {
 
 function tickCountdown() {
   const e = S?.game.event;
-  if (!e || S.game.phase !== 'event') return;
+  if (!e || S.game.phase !== 'event' || !e.openedAt) return;
   const total = e.closesAt - e.openedAt, left = Math.max(0, e.closesAt - api.now());
   const bar = $('timerBar'), cd = $('countdown');
   if (bar) bar.style.width = (left / total * 100) + '%';

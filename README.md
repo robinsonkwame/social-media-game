@@ -21,11 +21,13 @@ real social media flops. Each event card cites the true story behind it.
 1. **Roll the dice**: every team rolls at once, pieces move, risk is checked, the trend is revealed. The deal window opens.
 2. **Start the final call**: buy-downs and road choices apply; influencers see their offers; brands with competition may raise once.
 3. **Close deals**: contracts are signed.
-4. **Fire the next event**: a true-story card opens a 30-second reaction window on every phone.
-5. **Close the event and score it**: choices, speed bonuses and movement apply, the round ends, and everyone sees what really happened.
-6. **Start the next round**, or after round 6 **Extend to 8 rounds** or **Finish the game**.
+4. **Show the next event**: a true-story card appears on every screen with the story open and no clock, so teams can read it.
+5. **Start the countdown**: choices open on every phone (60 seconds by default; set it under **Reaction countdown**, and press **+15 seconds** if the class needs longer).
+6. **Close the event and score it**: choices, speed bonuses and movement apply, the round ends, and everyone sees what really happened.
+7. **Start the next round**, or after round 6 **Extend to 8 rounds** or **Finish the game**.
 
 Set the participation code in the lobby; every phone shows it at the end.
+Leaderboards show **Cash** (money on hand, never below $0) and **Gain** (the score: money gained or lost since the start, so it goes negative after spending).
 **+ Bot brand / + Bot influencer / Even the sides** add computer teams when one side is short.
 **Download CSV** exports one row per team per round.
 

@@ -77,7 +77,7 @@ export function createService(store, { now = () => Date.now(), rng = Math.random
     if (game.event) {
       const t = now();
       const bots = {};
-      for (const [s, b] of Object.entries(game.event.bots || {})) if (b.at <= t) bots[s] = { choice: b.choice, at: b.at };
+      for (const [s, b] of Object.entries(game.event.bots || {})) if (b.at && b.at <= t) bots[s] = { choice: b.choice, at: b.at };
       g.event = { ...game.event, bots };
     }
     g.offers = (game.offers || []).filter(o => o.brand === slug || o.infl === slug);
@@ -149,6 +149,9 @@ export function createService(store, { now = () => Date.now(), rng = Math.random
         case 'finalCall': await closeStage('deals', (g, acts) => E.finalCall(g, acts, rng)); break;
         case 'closeDeals': await closeStage('final', (g, acts) => E.closeDeals(g, acts, rng)); break;
         case 'fire': await withGame(g => E.fireEvent(g, now(), rng)); break;
+        case 'startTimer': await withGame(g => E.startTimer(g, now())); break;
+        case 'addTime': await withGame(g => E.addTime(g, payload.seconds, now())); break;
+        case 'timer': await withGame(g => E.setReactionSeconds(g, payload.seconds)); break;
         case 'resolve': await closeStage('event', (g, acts) => E.resolveEvent(g, acts, now(), rng)); break;
         case 'next': await withGame(g => E.nextRound(g)); break;
         case 'extend': await withGame(g => E.extendGame(g)); break;
@@ -173,7 +176,7 @@ export function createService(store, { now = () => Date.now(), rng = Math.random
         }
         case 'reset': {
           const { game: old } = await loadGame();
-          await withGame(g => { Object.keys(g).forEach(k => delete g[k]); Object.assign(g, E.newGame(now(), rng), { code: old.code }); });
+          await withGame(g => { Object.keys(g).forEach(k => delete g[k]); Object.assign(g, E.newGame(now(), rng), { code: old.code, reactionSeconds: old.reactionSeconds || g.reactionSeconds }); });
           const keys = await store.list(`g/${old.id}/`);
           await Promise.all(keys.map(k => store.del(k)));
           break;

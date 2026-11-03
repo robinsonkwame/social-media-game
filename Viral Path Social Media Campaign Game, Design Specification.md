@@ -103,7 +103,7 @@ A round lasts about two minutes, and the app controls every phase with a visible
 | 0:10 | Trend reveal | 5 s | One tag (Humor, Food, Fitness, or Value) is trending this round |
 | 0:15 | Deal window | 60 s | Brands offer, influencers accept, any team buys down risk; the last 15 s are the final call |
 | 1:15 | Contract reveal | 5 s | Selections flip at once on the main screen, and each brand learns whether it was selected |
-| 1:20 | Event and reaction | 30 s | One event card resolves; the target responds and other teams react or stay out |
+| 1:20 | Event and reaction | reading time + 60 s | The event card and its true story appear with no clock; the instructor starts the countdown, the target responds, and other teams react or stay out |
 | 1:50 | Resolution | 15 s | Attention gains and contract effects apply, attention decays, the leaderboard updates |
 
 Fork choices are made in the deal window of the round before a piece could reach the fork. A team that makes no choice takes the quiet route.
@@ -152,7 +152,7 @@ The prices are high on purpose. At $3,000 and $1,000, buying risk down early was
 
 ## Events and the reaction window
 
-One event per round gets a full 30-second reaction window. It goes to the team with the lowest roll among those landing on event spaces, with ties broken at random, and the card drawn matches that team's role. If no team lands on an event space, an open event is drawn instead.
+One event per round gets a full reaction window. The card and its true story appear first with no clock, so teams can read what happened before they decide; the instructor then starts the countdown, which is 60 seconds by default and can be set from 30 to 120 seconds, and can add 15 seconds while it runs. Speed bonuses count from the start of the countdown. The event goes to the team with the lowest roll among those landing on event spaces, with ties broken at random, and the card drawn matches that team's role. If no team lands on an event space, an open event is drawn instead.
 
 Other teams that land on event spaces in the same round resolve a minor event automatically: +5 attention and +1 risk, with no reaction window. Round one is scripted with Tiny Bite against a random brand team, or Missing Disclosure if no team picked brand.
 

@@ -35,6 +35,7 @@ test('a full game with two students and bots runs to a winner', async () => {
     if (mine.length) await svc.act('mint-squad', { accept: mine.slice(0, 1) }).catch(() => {});
     await svc.host('closeDeals');
     await svc.host('fire');
+    await svc.host('startTimer');
     ({ game } = await svc.hostState());
     assert.equal(game.phase, 'event');
     tick(4000);
@@ -69,6 +70,7 @@ test('a reaction after the host closes the window does not count, and the team i
   await svc.host('finalCall');
   await svc.host('closeDeals');
   await svc.host('fire');
+    await svc.host('startTimer');
   tick(CFG.reactionSeconds * 1000 + CFG.graceMs + 1);
   const { game } = await svc.hostState();
   const choice = game.event.target === 'solo' ? 'Apologize' : 'Support';
@@ -102,9 +104,36 @@ test('one answer per event: a second click is rejected', async () => {
   await svc.host('finalCall');
   await svc.host('closeDeals');
   await svc.host('fire');
+    await svc.host('startTimer');
   const { game } = await svc.hostState();
   tick(1000);
   const opts = game.event.target === 'y' ? 'Apologize' : 'Support';
   await svc.act('y', { choice: opts });
   await assert.rejects(svc.act('y', { choice: opts }), /already locked in/);
+});
+
+test('teams read first: no answers before the countdown, and the host can set and extend it', async () => {
+  const { svc, tick } = setup(11);
+  await svc.join('Reader', 'Niche', 'Food');
+  await svc.host('bots', { role: 'brand', count: 1 });
+  await svc.host('timer', { seconds: 90 });
+  await svc.host('start');
+  await svc.host('roll');
+  await svc.host('finalCall');
+  await svc.host('closeDeals');
+  await svc.host('fire');
+  let { game } = await svc.hostState();
+  const choice = game.event.kind === 'flop' ? (game.event.target === 'reader' ? 'Apologize' : 'Support') : 'Join';
+  if (game.event.card === 'Algorithm Shift' || game.event.card === 'Trend Spike') return;
+  await assert.rejects(svc.act('reader', { choice }), /countdown starts/);
+  tick(120000);  // reading time doesn't count against anyone
+  await svc.host('startTimer');
+  ({ game } = await svc.hostState());
+  assert.equal(game.event.closesAt - game.event.openedAt, 90000);
+  await svc.host('addTime', { seconds: 15 });
+  ({ game } = await svc.hostState());
+  assert.equal(game.event.closesAt - game.event.openedAt, 105000);
+  tick(100000);
+  await svc.act('reader', { choice });
+  await svc.host('resolve');
 });

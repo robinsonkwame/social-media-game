@@ -11,7 +11,8 @@ export const CFG = {
   // movement from choices; arrays are [High, Mid, Low] trust
   stepTarget: { 'Delete': [0, 0, 0], 'Apologize': [1, 1, 1], 'Ignore': [1, 1, 0], 'Lean in': [3, 1, -1] },
   stepSupport: 1, stepCritique: 2, stepJoin: 1, speedBonus: [2, 1],
-  reactionSeconds: 30,
+  reactionSeconds: 60,     // default; the host can change it (reactionChoices)
+  reactionChoices: [30, 45, 60, 90, 120],
   graceMs: 1500,          // late reactions within this window still count (network lag)
   maxTeams: 40,
   offerRange: 4,          // brands may offer to influencers within this many spaces

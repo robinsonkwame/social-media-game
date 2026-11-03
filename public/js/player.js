@@ -106,7 +106,7 @@ function renderStatus() {
   $('meRole').textContent = `${t.profile} ${roleName(t.role)}${t.tag ? ' · ' + t.tag : ''}`;
   const chance = Math.round(Math.max(0, Math.min(6, t.risk - 1)) / 6 * 100);
   $('meStats').innerHTML = `
-    <div class="stat"><div class="label">Money</div><div class="value">${money(t.money)}</div></div>
+    <div class="stat"><div class="label">Cash</div><div class="value">${money(t.money)}</div><div class="small muted">${t.money - t.start >= 0 ? 'up' : 'down'} ${money(Math.abs(t.money - t.start))} since the start</div></div>
     <div class="stat"><div class="label">Attention</div><div class="value">${t.att}</div><div class="bar"><div style="width:${t.att}%"></div></div></div>
     <div class="stat"><div class="label">Trust</div><div class="value">${t.trust}<span class="small muted">/10 ${BAND_NAME[band(t.trust)]}</span></div></div>
     <div class="stat"><div class="label">Risk</div><div class="value ${chance >= 33 ? 'risk-hi' : ''}">${t.risk}</div><div class="small muted">${chance}% backlash</div></div>`;
@@ -126,11 +126,11 @@ const flashLine = () => `<p class="small ${flash.startsWith('✓') ? 'okline' : 
 
 function renderPhase(force = false) {
   const g = S.game, t = me();
-  const key = JSON.stringify([g.id, g.phase, g.round, g.step, g.closing, S.myAct, g.offers, g.event && g.event.result ? 1 : 0, t.contracts.length, flash, showStory, g.code]);
+  const key = JSON.stringify([g.id, g.phase, g.round, g.step, g.closing, S.myAct, g.offers, g.event && g.event.result ? 1 : 0, g.event?.openedAt, g.event?.closesAt, t.contracts.length, flash, showStory, g.code]);
   if (!force && key === cardKey) return updateTicker();
   cardKey = key;
   const dk = `${g.id}:${g.round}:${g.phase}`;
-  if (dk !== draftKey) { draftKey = dk; draft = {}; showStory = false; flash = ''; }
+  if (dk !== draftKey) { draftKey = dk; draft = {}; showStory = g.phase === 'event'; flash = ''; }
   const html = {
     lobby: lobbyCard, ready: readyCard, deals: dealsCard, final: finalCard,
     dealt: dealtCard, event: eventCard, results: resultsCard, finished: finishedCard,
@@ -240,6 +240,12 @@ function respHint(r, t, c) {
   return `+${att} att · ${f.trust[b] > 0 ? '+' : ''}${f.trust[b]} trust · ${f.risk > 0 ? '+' : ''}${f.risk} risk · ${step >= 0 ? '+' + step : step} spaces`;
 }
 
+function choiceList(e, c, t) {
+  if (c.kind === 'flop' && e.target === slug) return Object.keys(FLOP).map(r => [r, r, respHint(r, t, c)]);
+  if (c.kind === 'flop') return [['Support', 'Support', `+5 att · +${CFG.stepSupport} space`], ['Critique', 'Critique', `+10 att · +2 risk · +${CFG.stepCritique} spaces · −1 trust if they lean in at High trust`], ['Out', 'Stay out', 'No change']];
+  return [['Join', 'Join the meme', `+8 att · +1 risk · +${CFG.stepJoin} space · speed bonus`], ['Out', 'Stay out', 'No change']];
+}
+
 function eventCard(g, t) {
   const e = g.event, c = CARDS[e.card];
   const options = choicesFor(g, t);
@@ -249,6 +255,12 @@ function eventCard(g, t) {
     <div>${showStory ? storyHtml(e.card, false) : ''}</div>`;
   const timer = `<div class="timer" aria-hidden="true"><div id="timerBar" style="width:100%"></div></div><div class="small muted" id="timerText"></div>`;
   const title = e.target === slug ? `${e.title}: it's you` : e.title;
+  if (!e.openedAt) {
+    // reading time: the story is open and the choices wait for the countdown
+    const preview = options.length ? `<div class="choices">${choiceList(e, c, t).map(([, label, hint]) => `<button type="button" class="choice" disabled><b>${esc(label)}</b><small>${esc(hint)}</small></button>`).join('')}</div>` : '';
+    return head(title, 'Read the story') + `<p class="prompt">${esc(prompt)}</p>${storyHtml(e.card, false)}${preview}
+      <p class="small muted">${options.length ? `Your choices open when ${solo ? 'you start' : 'the teacher starts'} the ${g.reactionSeconds}-second countdown. The first two teams to react get bonus spaces.` : (t.finished ? "You're at the finish, so you sit this one out." : 'No decision this time.')}</p>`;
+  }
   if (!options.length) {
     return head(title, 'Event') + `<p class="prompt">${esc(prompt)}</p>${timer}<p class="small muted">${t.finished ? "You're at the finish, so you sit this one out." : 'No decision this time. Watch the main screen.'}</p>${learn}`;
   }
@@ -258,10 +270,7 @@ function eventCard(g, t) {
       <p class="okline">You chose ${esc(S.myAct.choice === 'Out' ? 'Stay out' : S.myAct.choice)} at ${secs}s.</p>
       <p class="small muted">${solo ? 'Score the event when you are ready.' : 'Results appear when the teacher closes the event.'}</p>${learn}<div class="small muted" id="botTicker"></div>`;
   }
-  let choices;
-  if (c.kind === 'flop' && e.target === slug) choices = Object.keys(FLOP).map(r => [r, r, respHint(r, t, c)]);
-  else if (c.kind === 'flop') choices = [['Support', 'Support', `+5 att · +${CFG.stepSupport} space`], ['Critique', 'Critique', `+10 att · +2 risk · +${CFG.stepCritique} spaces · −1 trust if they lean in at High trust`], ['Out', 'Stay out', 'No change']];
-  else choices = [['Join', 'Join the meme', `+8 att · +1 risk · +${CFG.stepJoin} space · speed bonus`], ['Out', 'Stay out', 'No change']];
+  const choices = choiceList(e, c, t);
   return head(title, 'Reaction window') + `<p class="prompt">${esc(prompt)}</p>${timer}
     <div class="choices">${choices.map(([id, label, hint]) => `<button type="button" class="choice" data-choice="${id}" ${busy ? 'disabled' : ''}><b>${esc(label)}</b><small>${esc(hint)}</small></button>`).join('')}</div>
     ${learn}${flashLine()}<div class="small muted" id="botTicker"></div>`;
@@ -313,8 +322,9 @@ function soloSteps(g, t) {
     ready: [['roll', 'Roll the dice']],
     deals: [['finalCall', 'Done with deals']],
     final: [['closeDeals', 'Close deals']],
-    dealt: [['fire', 'Fire the next event']],
-    event: [['resolve', S.myAct || !choicesFor(g, t).length ? 'Score the event' : 'Skip and score the event']],
+    dealt: [['fire', 'Show the next event']],
+    event: g.event && !g.event.openedAt ? [['startTimer', `Start the ${g.reactionSeconds}-second countdown`]]
+      : [['resolve', S.myAct || !choicesFor(g, t).length ? 'Score the event' : 'Skip and score the event']],
     results: g.round < g.rounds ? [['next', `Start round ${g.round + 1}`]]
       : [...(g.rounds < CFG.maxRounds ? [['extend', `Extend to ${CFG.maxRounds} rounds`]] : []), ['finish', 'Finish the game']],
     finished: [['again', 'Play again']],
@@ -364,7 +374,7 @@ function updateTicker() {
 function tickTimer() {
   const e = S?.game.event;
   const bar = $('timerBar'), txt = $('timerText');
-  if (!e || !bar || S.game.phase !== 'event') return;
+  if (!e || !bar || S.game.phase !== 'event' || !e.openedAt) return;
   const total = e.closesAt - e.openedAt, left = Math.max(0, e.closesAt - api.now());
   bar.style.width = (left / total * 100) + '%';
   if (txt) txt.textContent = left > 0 ? `${Math.ceil(left / 1000)}s left` : "Time's up. Waiting for the teacher.";

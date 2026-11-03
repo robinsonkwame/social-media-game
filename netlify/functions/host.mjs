@@ -1,6 +1,6 @@
 // POST /api/host { action, ...payload }
-// actions: start, roll, finalCall, closeDeals, fire, resolve, next, extend,
-// finish, code, bots, fill, kick, unstick, reset.
+// actions: start, roll, finalCall, closeDeals, fire, startTimer, addTime,
+// resolve, next, extend, finish, timer, code, bots, fill, kick, unstick, reset.
 // Requires the X-Host-Key header to match the HOST_KEY environment variable.
 import { service, json, handle, requireHost, requireMethod, body } from './_lib/server.mjs';
 
