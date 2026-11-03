@@ -5,7 +5,7 @@ import { createBoard } from './board.js';
 import { CFG } from './rules.js';
 import { CARDS } from './cards.js';
 import { csvRows, netOf, money } from './engine.js';
-import { $, esc, storyHtml, leaderboard, feedHtml, PHASE_LABEL, roleName } from './ui.js';
+import { $, esc, storyHtml, leaderboard, feedHtml, PHASE_LABEL, roleName, nextEventHtml, eventKindHtml, SPEED_LINE } from './ui.js';
 
 const api = await createApi();
 const debug = isDebug();
@@ -53,7 +53,8 @@ function phaseButtons(g) {
   }
   if (g.phase === 'finished') return [];
   if (g.phase === 'event') {
-    if (!g.event.openedAt) return [['startTimer', `Start the ${g.reactionSeconds}-second countdown`, 'Opens the choices on every phone. The first two teams to react get bonus spaces.']];
+    if (!g.event.timed) return [['resolve', 'Apply the event', 'This card has no choices. It applies to everyone and ends the round.']];
+    if (!g.event.openedAt) return [['startTimer', `Start the ${g.reactionSeconds || CFG.reactionSeconds}-second countdown`, 'Opens the choices on every phone. The first two teams to react get bonus spaces.']];
     return [['addTime', '+15 seconds', 'Gives everyone a little longer.'], ['resolve', 'Close the event and score it', 'Applies everyone\'s choice, speed bonuses and movement, then ends the round.']];
   }
   return STEPS[g.phase] || [];
@@ -65,14 +66,15 @@ function renderControls() {
   const humans = teams.filter(t => !t.bot);
   let status = '';
   if (g.phase === 'deals' || g.phase === 'final') status = `<p class="small muted">${S.submitted.length} of ${humans.length} team${humans.length === 1 ? '' : 's'} sent choices.</p>`;
-  if (g.phase === 'event') status = g.event.openedAt ? `<p class="small muted">${S.submitted.length} of ${humans.filter(t => !t.finished).length} teams answered.</p>` : '<p class="small muted">Reading time. No clock is running.</p>';
+  if (g.phase === 'event') status = !g.event.timed ? '' : g.event.openedAt ? `<p class="small muted">${S.submitted.length} of ${humans.filter(t => !t.finished).length} teams answered.</p>` : '<p class="small muted">Reading time. No clock is running.</p>';
   $('phaseActions').innerHTML = `<div class="eyebrow">${esc(PHASE_LABEL[g.phase] || g.phase)}${g.round ? ` · round ${g.round} of ${g.rounds}` : ''}</div>` + status +
     phaseButtons(g).map(([a, label, hint], i) => `<button class="btn ${i === phaseButtons(g).length - 1 ? 'primary' : ''}" data-action="${a}" type="button" ${busy ? 'disabled' : ''}>${esc(label)}</button><p class="small muted" style="margin:0">${esc(hint)}</p>`).join('') +
     (g.phase === 'finished' ? '<p class="small">Game over. Download the CSV, or reset to play again.</p>' : '');
   if (document.activeElement !== $('codeInput')) $('codeInput').value = g.code || '';
   if (document.activeElement !== $('timerSelect')) {
-    const opts = [...new Set([...CFG.reactionChoices, g.reactionSeconds])].sort((a, b) => a - b);
-    $('timerSelect').innerHTML = opts.map(v => `<option value="${v}" ${v === g.reactionSeconds ? 'selected' : ''}>${v} seconds</option>`).join('');
+    const cur = g.reactionSeconds || CFG.reactionSeconds;
+    const opts = [...new Set([...CFG.reactionChoices, cur])].sort((a, b) => a - b);
+    $('timerSelect').innerHTML = opts.map(v => `<option value="${v}" ${v === cur ? 'selected' : ''}>${v} seconds</option>`).join('');
   }
   $('unstickBtn').hidden = !g.closing;
   $('teamTable').innerHTML = teams.length ? teams.map(t => `<tr><td><span class="dot ${t.role}" style="background:${t.color}"></span>${esc(t.name)}${t.bot ? ' <span class="tag">BOT</span>' : ''}</td><td class="small muted">${roleName(t.role)}</td>
@@ -198,27 +200,31 @@ function renderStage() {
     case 'deals':
       h = `<h2>Deal window</h2><p class="event-prompt"><b>${esc(g.trend)}</b> is trending.</p>
         <ul><li>Brands: offer a two-round contract to an influencer within ${CFG.offerRange} spaces (or anyone, from a Deal space).</li>
-        <li>Everyone: buy down risk (${money(CFG.buy.brand)} a point for brands, ${money(CFG.buy.infl)} for influencers) and pick your road at the next fork.</li></ul>`;
+        <li>Everyone: buy down risk (${money(CFG.buy.brand)} a point for brands, ${money(CFG.buy.infl)} for influencers) and pick your road at the next fork.</li></ul>
+        ${nextEventHtml(g, null)}`;
       break;
     case 'final': {
       const contested = [...new Set(g.offers.filter(o => o.notice).map(o => o.infl))].map(s => g.teams[s]?.name);
       h = `<h2>Final call</h2><p class="event-prompt">Influencers: pick up to two offers on your phone.</p>
-        ${contested.length ? `<p>Considering multiple offers: <b>${esc(contested.join(', '))}</b>. Those brands may raise once.</p>` : '<p class="muted">No influencer has more than one offer.</p>'}`;
+        ${contested.length ? `<p>Considering multiple offers: <b>${esc(contested.join(', '))}</b>. Those brands may raise once.</p>` : '<p class="muted">No influencer has more than one offer.</p>'}
+        ${nextEventHtml(g, null)}`;
       break;
     }
     case 'dealt': {
       const signed = g.partnerships.filter(p => p.round === g.round && p.signed);
       h = `<h2>Contracts signed</h2>${signed.length ? `<ul>${signed.map(p => `<li><b>${esc(g.teams[p.brand]?.name)}</b> + <b>${esc(g.teams[p.infl]?.name)}</b> for ${money(p.amt)}</li>`).join('')}</ul>` : '<p class="muted">No contracts this round.</p>'}
-        <p class="event-prompt">Next up: a real social media flop.</p>`;
+        ${nextEventHtml(g, null)}<p class="small muted">${esc(SPEED_LINE)}</p>`;
       break;
     }
     case 'event': {
       const e = g.event, c = CARDS[e.card], target = e.target ? g.teams[e.target] : null;
       const prompt = c.kind === 'flop' ? `${c.others(target.name)} ${target.name}: Delete, Apologize, Ignore, or Lean in? Everyone else: Support, Critique, or Stay out?` : c.prompt;
-      h = `<div class="phase-head"><h2 class="event-title">${esc(e.title)}</h2><span class="countdown" id="countdown">${e.openedAt ? '' : 'Read'}</span></div>
+      h = `<div class="phase-head"><h2 class="event-title">${esc(e.title)}</h2><span class="countdown" id="countdown">${!e.timed ? '' : e.openedAt ? '' : 'Read'}</span></div>
+        <div>${eventKindHtml(g, null)}</div>
         <p class="event-prompt">${esc(prompt)}</p>
-        ${e.openedAt ? '<div class="timer" aria-hidden="true"><div id="timerBar" style="width:100%"></div></div><p class="small muted">Answer on your phone. The first two teams to react move ahead 2 and 1 extra spaces.</p>'
-          : `<p class="small muted">Reading time. Choices open when the ${g.reactionSeconds}-second countdown starts.</p>`}
+        ${!e.timed ? '<p class="small muted">No choices this time. It applies to everyone.</p>'
+          : e.openedAt ? `<div class="timer" aria-hidden="true"><div id="timerBar" style="width:100%"></div></div><p><b>${esc(SPEED_LINE)}</b></p><div class="fastest" id="fastest"></div>`
+          : `<p class="small muted">Reading time. Choices open when the ${g.reactionSeconds || CFG.reactionSeconds}-second countdown starts. ${esc(SPEED_LINE)}</p>`}
         ${storyHtml(e.card, false)}`;
       break;
     }
@@ -245,7 +251,21 @@ function renderStage() {
   tickCountdown();
 }
 
+// Fastest reactions so far (names and times only, so choices stay a surprise).
+function updateFastest() {
+  const el = $('fastest'), e = S?.game.event;
+  if (!el || !e?.openedAt) return;
+  const t = api.now();
+  const list = [
+    ...Object.entries(S.acts || {}).map(([s, a]) => ({ s, at: a.at, choice: a.choice })),
+    ...Object.entries(e.bots || {}).filter(([, b]) => b.at && b.at <= t).map(([s, b]) => ({ s, at: b.at, choice: b.choice })),
+  ].filter(x => x.choice !== 'Out' && x.s !== e.target).sort((a, b) => a.at - b.at);
+  el.innerHTML = list.length ? '<div class="eyebrow">Fastest so far</div>' + list.slice(0, 5).map((x, i) => `<div>${i + 1}. <b>${esc(S.game.teams[x.s]?.name || x.s)}</b> · ${((x.at - e.openedAt) / 1000).toFixed(1)}s${i < CFG.speedBonus.length ? ` · +${CFG.speedBonus[i]} space${CFG.speedBonus[i] > 1 ? 's' : ''}` : ''}</div>`).join('')
+    : '<div class="small muted">No reactions yet. Be first for +2 spaces.</div>';
+}
+
 function tickCountdown() {
+  updateFastest();
   const e = S?.game.event;
   if (!e || S.game.phase !== 'event' || !e.openedAt) return;
   const total = e.closesAt - e.openedAt, left = Math.max(0, e.closesAt - api.now());

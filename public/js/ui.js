@@ -1,7 +1,8 @@
 // Small helpers shared by the host and player screens.
 import { CARDS } from './cards.js';
 import { band, BAND_NAME } from './rules.js';
-import { netOf, trustChangeOf, money } from './engine.js';
+import { netOf, trustChangeOf, money, describeNextEvent } from './engine.js';
+import { CFG } from './rules.js';
 
 export { money };
 export const $ = id => document.getElementById(id);
@@ -36,6 +37,24 @@ export function leaderboard(game, role, meSlug, { compact = false } = {}) {
     <td>${money(t.money)}</td><td>${money(netOf(game, t))}</td><td>${t.att}</td><td>${t.trust} ${deltaHtml(trustChangeOf(t))}</td>${compact ? '' : `<td>${t.risk}</td>`}<td>${t.finished ? '🏁' : t.pos}</td></tr>`).join('')}</tbody></table>`;
 }
 
+export const SPEED_LINE = `Speed bonus: the first team to react moves ${CFG.speedBonus[0]} extra spaces and the second ${CFG.speedBonus[1]} extra. Spaces bring you closer to the $1,000,000 finish.`;
+export const ordinal = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : { 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th');
+
+// "Next event" line shown from the roll until the card appears.
+export function nextEventHtml(game, meSlug) {
+  const line = describeNextEvent(game, meSlug);
+  return line ? `<p class="small next-up"><b>Next event:</b> ${esc(line)}</p>` : '';
+}
+
+// What kind of card is up: aimed at one team, or for everyone.
+export function eventKindHtml(game, meSlug) {
+  const e = game.event;
+  if (!e) return '';
+  if (!e.target) return `<span class="chip">Affects everyone · nobody landed on an Event space</span>`;
+  const who = e.target === meSlug ? 'you' : esc(game.teams[e.target]?.name || e.target);
+  return `<span class="chip">Flop aimed at ${who}${e.reason === 'landed' ? ' · landed on an Event space' : e.reason === 'round1' ? ' · round 1 opener' : ''}</span>`;
+}
+
 export function feedHtml(game, n = 40) {
   return (game.log || []).slice(0, n).map(l => `<div><span class="r">R${l.r}</span>${esc(l.text)}</div>`).join('');
 }
@@ -45,7 +64,7 @@ export const HOW_TO = `
     <section><h3>The big idea</h3><ul>
       <li>Your team races along the candy track to the castle.</li>
       <li><b>Brands</b> are companies. <b>Influencers</b> are creators people follow.</li>
-      <li>Each round: everyone rolls and moves, a topic starts trending, you make deals, then a <b>real social media flop</b> happens and you react.</li>
+      <li>Each round: everyone rolls and moves, a topic starts trending, you make deals, then <b>one event</b> happens: a <b>real social media flop</b> aimed at the team on an Event space with the lowest roll, or, if nobody landed on one, an event that affects everyone.</li>
     </ul></section>
     <section><h3>Your four numbers</h3><ul>
       <li><b>Attention</b>: how many eyes are on you. Comes fast, fades a quarter every round.</li>
@@ -55,7 +74,7 @@ export const HOW_TO = `
     </ul></section>
     <section><h3>How to win</h3><ul>
       <li>The first team to reach the castle wins <b>$1,000,000</b>. If nobody makes it, the team furthest along wins it.</li>
-      <li>Good choices move you forward. Fast reactions earn bonus spaces.</li>
+      <li>Good choices move you forward. <b>Speed bonus:</b> the first team to react to an event moves 2 extra spaces, the second 1 extra.</li>
       <li>Leaning in on a flop pays big when your trust is High, and pushes you back when it's Low.</li>
       <li>At the end, teams are ranked by money gained, against their own role.</li>
     </ul></section>

@@ -4,7 +4,7 @@ import { createBoard } from './board.js';
 import { CFG, PROFILES, TAGS, FLOP, band, BAND_NAME, FORK1, fork2Index } from './rules.js';
 import { CARDS } from './cards.js';
 import { inRange, spaceOf, lengthOf, choicesFor, netOf, trustChangeOf, money } from './engine.js';
-import { $, esc, storyHtml, leaderboard, feedHtml, HOW_TO, PHASE_LABEL, roleName, signed } from './ui.js';
+import { $, esc, storyHtml, leaderboard, feedHtml, HOW_TO, PHASE_LABEL, roleName, signed, nextEventHtml, eventKindHtml, SPEED_LINE, ordinal } from './ui.js';
 
 const api = await createApi();
 const solo = api.mode === 'solo';  // solo practice: you run the host steps yourself
@@ -188,7 +188,7 @@ function dealsCard(g, t) {
     offer = '<p class="small muted">Brands are making offers now. You will see them side by side in the final call.</p>';
   }
   return head('Deal window', `${g.trend} is trending`) + `
-    <p class="prompt">${esc(rollLine(g, t))}</p>
+    <p class="prompt">${esc(rollLine(g, t))}</p>${nextEventHtml(g, slug)}
     <div class="field"><label>Buy down risk (${money(price)} per point)</label>
       <div class="row"><button type="button" class="btn" data-buy="-1" ${draft.buy <= 0 ? 'disabled' : ''}>−</button><span class="num">${draft.buy}</span>
       <button type="button" class="btn" data-buy="1" ${draft.buy >= maxBuy ? 'disabled' : ''}>+</button>
@@ -200,6 +200,9 @@ function dealsCard(g, t) {
 }
 
 function finalCard(g, t) {
+  return finalCardBody(g, t) + nextEventHtml(g, slug);
+}
+function finalCardBody(g, t) {
   if (t.role === 'brand') {
     const o = g.offers.find(x => x.brand === slug);
     if (!o) return head('Final call', 'Deals') + '<p class="prompt">You made no offer this round.</p><p class="small muted">Influencers are choosing between offers now.</p>';
@@ -231,7 +234,7 @@ function dealtCard(g, t) {
   const fresh = t.contracts.filter(k => k.left === 2).map(k => g.teams[k.partner]?.name).filter(Boolean);
   return head('Deals are done', `Round ${g.round}`) + `
     <p class="prompt">${fresh.length ? `You signed with ${esc(fresh.join(' and '))}.` : 'No new contract for you this round.'}</p>
-    <p class="small muted">Get ready: the next event is a real social media flop. Fast reactions earn bonus spaces.</p>`;
+    ${nextEventHtml(g, slug)}<p class="small muted">${esc(SPEED_LINE)}</p>`;
 }
 
 function respHint(r, t, c) {
@@ -255,11 +258,16 @@ function eventCard(g, t) {
     <div>${showStory ? storyHtml(e.card, false) : ''}</div>`;
   const timer = `<div class="timer" aria-hidden="true"><div id="timerBar" style="width:100%"></div></div><div class="small muted" id="timerText"></div>`;
   const title = e.target === slug ? `${e.title}: it's you` : e.title;
+  const kind = `<div>${eventKindHtml(g, slug)}</div>`;
+  if (!e.timed) {
+    return head(e.title, 'Event') + kind + `<p class="prompt">${esc(prompt)}</p>
+      <p class="small muted">No decision this time. It applies to everyone when ${solo ? 'you apply' : 'the teacher applies'} it.</p>${storyHtml(e.card, false)}`;
+  }
   if (!e.openedAt) {
     // reading time: the story is open and the choices wait for the countdown
     const preview = options.length ? `<div class="choices">${choiceList(e, c, t).map(([, label, hint]) => `<button type="button" class="choice" disabled><b>${esc(label)}</b><small>${esc(hint)}</small></button>`).join('')}</div>` : '';
-    return head(title, 'Read the story') + `<p class="prompt">${esc(prompt)}</p>${storyHtml(e.card, false)}${preview}
-      <p class="small muted">${options.length ? `Your choices open when ${solo ? 'you start' : 'the teacher starts'} the ${g.reactionSeconds}-second countdown. The first two teams to react get bonus spaces.` : (t.finished ? "You're at the finish, so you sit this one out." : 'No decision this time.')}</p>`;
+    return head(title, 'Read the story') + kind + `<p class="prompt">${esc(prompt)}</p>${storyHtml(e.card, false)}${preview}
+      <p class="small muted">${options.length ? `Your choices open when ${solo ? 'you start' : 'the teacher starts'} the ${g.reactionSeconds || CFG.reactionSeconds}-second countdown. ${SPEED_LINE}` : (t.finished ? "You're at the finish, so you sit this one out." : 'No decision this time.')}</p>`;
   }
   if (!options.length) {
     return head(title, 'Event') + `<p class="prompt">${esc(prompt)}</p>${timer}<p class="small muted">${t.finished ? "You're at the finish, so you sit this one out." : 'No decision this time. Watch the main screen.'}</p>${learn}`;
@@ -271,7 +279,8 @@ function eventCard(g, t) {
       <p class="small muted">${solo ? 'Score the event when you are ready.' : 'Results appear when the teacher closes the event.'}</p>${learn}<div class="small muted" id="botTicker"></div>`;
   }
   const choices = choiceList(e, c, t);
-  return head(title, 'Reaction window') + `<p class="prompt">${esc(prompt)}</p>${timer}
+  return head(title, 'Reaction window') + kind + `<p class="prompt">${esc(prompt)}</p>${timer}
+    <p class="small"><b>${esc(SPEED_LINE)}</b></p>
     <div class="choices">${choices.map(([id, label, hint]) => `<button type="button" class="choice" data-choice="${id}" ${busy ? 'disabled' : ''}><b>${esc(label)}</b><small>${esc(hint)}</small></button>`).join('')}</div>
     ${learn}${flashLine()}<div class="small muted" id="botTicker"></div>`;
 }
@@ -279,8 +288,9 @@ function eventCard(g, t) {
 function resultsCard(g, t) {
   const e = g.event, r = e?.result;
   if (!r) return head('Round results', '') + '<p class="muted">Waiting for results.</p>';
-  const mine = r.reactions.find(x => x.slug === slug);
-  const my = e.target === slug ? `You chose ${r.response}.` : mine ? `You chose ${mine.choice} at ${mine.secs}s${mine.bonus ? ` and got +${mine.bonus} speed bonus` : ''}.` : '';
+  const idx = r.reactions.findIndex(x => x.slug === slug), mine = r.reactions[idx];
+  const my = e.target === slug ? `You chose ${r.response}.`
+    : mine ? `You chose ${mine.choice === 'Join' ? 'to join' : mine.choice} at ${mine.secs}s, ${ordinal(idx + 1)} to react${mine.bonus ? `: +${mine.bonus} bonus space${mine.bonus > 1 ? 's' : ''} toward the finish` : ' (only the first two get a speed bonus)'}.` : '';
   return head(e.title, 'Results') + `
     ${my ? `<p class="prompt">${esc(my)}</p>` : ''}
     <ul class="small">${r.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
@@ -323,7 +333,8 @@ function soloSteps(g, t) {
     deals: [['finalCall', 'Done with deals']],
     final: [['closeDeals', 'Close deals']],
     dealt: [['fire', 'Show the next event']],
-    event: g.event && !g.event.openedAt ? [['startTimer', `Start the ${g.reactionSeconds}-second countdown`]]
+    event: g.event && !g.event.timed ? [['resolve', 'Apply the event']]
+      : g.event && !g.event.openedAt ? [['startTimer', `Start the ${g.reactionSeconds || CFG.reactionSeconds}-second countdown`]]
       : [['resolve', S.myAct || !choicesFor(g, t).length ? 'Score the event' : 'Skip and score the event']],
     results: g.round < g.rounds ? [['next', `Start round ${g.round + 1}`]]
       : [...(g.rounds < CFG.maxRounds ? [['extend', `Extend to ${CFG.maxRounds} rounds`]] : []), ['finish', 'Finish the game']],

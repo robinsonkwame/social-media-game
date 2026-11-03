@@ -154,6 +154,8 @@ The prices are high on purpose. At $3,000 and $1,000, buying risk down early was
 
 One event per round gets a full reaction window. The card and its true story appear first with no clock, so teams can read what happened before they decide; the instructor then starts the countdown, which is 60 seconds by default and can be set from 30 to 120 seconds, and can add 15 seconds while it runs. Speed bonuses count from the start of the countdown. The event goes to the team with the lowest roll among those landing on event spaces, with ties broken at random, and the card drawn matches that team's role. If no team lands on an event space, an open event is drawn instead.
 
+Who the event targets is settled right after the roll and shown on every screen during the deal window, for example "This round's event is a flop aimed at Gumdrop Co.: they landed on an Event space with the lowest roll" or "Nobody landed on an Event space, so this round's event affects everyone." Pieces do not move between the roll and the event, so the notice stays true. Each event card is labeled the same way when it appears. Algorithm Shift and Trend Spike ask for no choices, so they skip the countdown and the instructor simply applies them.
+
 Other teams that land on event spaces in the same round resolve a minor event automatically: +5 attention and +1 risk, with no reaction window. Round one is scripted with Tiny Bite against a random brand team, or Missing Disclosure if no team picked brand.
 
 Every card is based on a true story, and its full text (prompts, Learn more context, what really happened, and the source) lives in `event-cards.md`.
@@ -182,7 +184,7 @@ Movement follows trust, so leaning in moves a High-trust target 3 spaces forward
 
 Every other team, influencers included, chooses Support, Critique, or Stay out in the same window. Critique covers any public commentary at the target's expense, from a serious point to a joke. Support gives +5 attention, no added risk, and 1 space. Critique gives +10 attention, +2 risk, and 2 spaces, and each critiquing team loses 1 trust if the target leaned in at High trust. Joining a Meme Format gives 1 space on top of its attention.
 
-Speed is rewarded on the board. The first team to react, by support or critique, moves forward 2 spaces and the second moves 1; the same applies to the first two teams joining a Meme Format. These speed bonuses add to the spaces from the choice itself. Spaces gained this way credit any payday passed at resolution.
+Speed is rewarded on the board. The first team to react, by support or critique, moves forward 2 spaces and the second moves 1, and every phone states this before and during the countdown. The main screen lists the fastest teams so far, with names and times but not their choices, and each team's result says where it placed; the same applies to the first two teams joining a Meme Format. These speed bonuses add to the spaces from the choice itself. Spaces gained this way credit any payday passed at resolution.
 
 ## Self-play mode
 

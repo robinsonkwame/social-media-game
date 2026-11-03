@@ -179,8 +179,46 @@ export function rollAll(game, rng = Math.random) {
   game.trend = pick(TAGS, rng);
   game.offers = [];
   game.event = null;
+  game.nextEvent = planEvent(game, rng);
   game.phase = 'deals';
   say(game, `Trending this round: ${game.trend}.`);
+  say(game, describeNextEvent(game));
+}
+
+// Decided right after the roll, so everyone knows during the deals whether
+// the round's one event is a flop aimed at a team or an event for everyone.
+// Pieces don't move again until the event, so the plan stays true.
+function planEvent(game, rng) {
+  const live = teamsOf(game).filter(t => !t.finished);
+  const onEvent = live.filter(t => spaceOf(t).type === 'Event');
+  let target = null, reason = 'none';
+  if (game.round === 1) {
+    const brands = live.filter(t => t.role === 'brand');
+    const pool = brands.length ? brands : live;
+    target = pool.length ? pick(pool, rng) : null;
+    reason = 'round1';
+  } else if (onEvent.length) {
+    target = onEvent.slice().sort((a, b) => a.lastRoll - b.lastRoll || rng() - 0.5)[0];
+    reason = 'landed';
+  }
+  return {
+    kind: target ? 'flop' : 'open', target: target ? target.slug : null, reason,
+    minors: onEvent.filter(t => t !== target).map(t => t.slug),
+  };
+}
+
+export function describeNextEvent(game, meSlug = null) {
+  const n = game.nextEvent;
+  if (!n) return '';
+  const name = s => (s === meSlug ? 'you' : game.teams[s]?.name || s);
+  let line;
+  if (n.kind === 'open') line = 'Nobody landed on an Event space, so this round\'s event affects everyone.';
+  else if (n.reason === 'round1') line = `Round 1 always opens with a flop aimed at ${name(n.target)}.`;
+  else line = `This round's event is a flop aimed at ${name(n.target)}: ${n.target === meSlug ? 'you' : 'they'} landed on an Event space with the lowest roll.`;
+  const minors = n.minors.filter(s => game.teams[s]);
+  if (minors.includes(meSlug)) line += ' You also landed on an Event space, so you get minor buzz (+5 attention, +1 risk) when it fires.';
+  else if (minors.length) line += ` Also on Event spaces: ${minors.map(name).join(', ')} (minor buzz: +5 attention, +1 risk).`;
+  return line;
 }
 
 // ------------------------------------------------------------------ deals
@@ -355,21 +393,15 @@ const botDelayMs = (t, rng) => { const [a, b] = STRATS[t.bot].speed; return Math
 export function fireEvent(game, now = Date.now(), rng = Math.random) {
   if (game.phase !== 'dealt') throw new GameError('Close the deals first');
   const live = teamsOf(game).filter(t => !t.finished);
-  const onEvent = live.filter(t => spaceOf(t).type === 'Event');
-  let target = null, card, minors = [];
-  if (game.round === 1) {
-    const brands = live.filter(t => t.role === 'brand');
-    const pool = brands.length ? brands : live;
-    target = pool.length ? pick(pool, rng) : null;
-    card = brands.length ? 'Tiny Bite' : 'Missing Disclosure';
-    minors = onEvent.filter(t => t !== target);
-  } else if (onEvent.length) {
-    target = onEvent.slice().sort((a, b) => a.lastRoll - b.lastRoll || rng() - 0.5)[0];
+  const plan = game.nextEvent || planEvent(game, rng);
+  let target = plan.target ? game.teams[plan.target] : null, card;
+  if (target && target.finished) target = null;
+  const minors = plan.minors.map(s => game.teams[s]).filter(t => t && !t.finished);
+  if (target && plan.reason === 'round1') card = target.role === 'brand' ? 'Tiny Bite' : 'Missing Disclosure';
+  else if (target) {
     card = pick(target.role === 'brand' ? BRAND_FLOPS : INFL_FLOPS, rng);
     if (card === 'Launch Ad') card = pick(LAUNCH_AD_VARIANTS, rng);
-    minors = onEvent.filter(t => t !== target);
-  }
-  if (!target) card = pick(OPEN_EVENTS, rng);
+  } else card = pick(OPEN_EVENTS, rng);
   for (const t of minors) {
     t.att += 5; t.risk += 1;
     say(game, `${t.name} landed on an event space: minor buzz (+5 attention, +1 risk).`);
@@ -387,9 +419,10 @@ export function fireEvent(game, now = Date.now(), rng = Math.random) {
   // The card goes up first with no clock, so teams can read the true story.
   // The countdown starts when the host calls startTimer.
   game.event = {
-    card, title: titleOf(card), kind: c.kind, target: target ? target.slug : null,
-    shownAt: now, openedAt: null, closesAt: null, bots, result: null,
+    card, title: titleOf(card), kind: c.kind, target: target ? target.slug : null, reason: plan.reason,
+    timed: choicesNeeded(card), shownAt: now, openedAt: null, closesAt: null, bots, result: null,
   };
+  game.nextEvent = null;
   game.phase = 'event';
   say(game, target ? `Event: ${titleOf(card)} hits ${target.name}.` : `Event: ${titleOf(card)}.`);
 }
@@ -417,6 +450,9 @@ export function addTime(game, seconds, now = Date.now()) {
   e.closesAt = Math.max(e.closesAt, now) + s * 1000;
   say(game, `The host added ${s} seconds.`);
 }
+
+// Algorithm Shift and Trend Spike just apply; every other card asks for choices.
+export const choicesNeeded = card => CARDS[card].kind === 'flop' || card === 'Meme Format';
 
 // Which choices a team has in the open event window, or [] if none.
 export function choicesFor(game, t) {
@@ -560,6 +596,7 @@ export function nextRound(game) {
   game.round += 1;
   game.phase = 'ready';
   game.event = null;
+  game.nextEvent = null;
   game.trails = {};
   say(game, `Round ${game.round}.`);
 }
