@@ -13,7 +13,7 @@ real social media flops. Each event card cites the true story behind it.
 | Page | Who | What it does |
 |---|---|---|
 | `/host` | the teacher | Controls on the left; the projected board, event panel and leaderboards on the right. You decide when to roll, when deals close, and when the next event fires. You can also join a team yourself. |
-| `/` | each team, on a phone | Join with a team name and profile, then follow the round: deals, final call, timed reactions with **Learn more**, and the participation code at the end. |
+| `/` | each team, on a phone | Join with a team name and profile, then follow the round: deals, final call, timed reactions with **Learn more**, and the participation code at the end. **Zoom in** doubles the board around your piece (drag to look around, **Find me** to jump back). |
 | `/solo` | anyone | Practice: one team against five bots on the same rules, with you pressing the teacher's buttons. Pick the die before you start; **Restart** (click twice) starts over. Runs in the browser; a reload picks up where you left off. |
 
 ### Running a round from `/host`
@@ -33,7 +33,7 @@ Leaderboards show **Cash** (money on hand, never below $0), **Profit** (the scor
 **Download CSV** exports one row per team per round.
 The version shown at the bottom of every page is `VERSION` in `public/js/rules.js`; bump it when you push a release.
 The finish prize is `prize` in `public/js/rules.js`; change it there and every screen, the board and the leaderboards follow.
-Underlined game words (Cash, Profit, Attention, Trust, Risk, Space, Payday, Deals, Trend, Backlash) open a short card: what it is, what raises and lowers it, and whether it helps you win. Edit the text in `GLOSSARY` in `public/js/ui.js`.
+Underlined game words (Cash, Profit, Attention, Trust, Risk, Space, Payday, Deals, Trend, Backlash) open a short card: what it is, what raises and lowers it, and whether it helps you win. So do the board legend and the on-board key (each space type, the viral road, brand and influencer pieces). Edit the text in `GLOSSARY` in `public/js/ui.js`.
 
 ## Try it without deploying (simulated mode)
 

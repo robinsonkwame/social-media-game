@@ -109,6 +109,7 @@ export const GLOSSARY = {
     title: 'Backlash',
     what: 'What happens when your risk is higher than the risk check after the roll.',
     up: [],
+    downLabel: 'What it does',
     down: ['−1 trust and −10 attention', `Your piece slides back ${CFG.backlashSlide} spaces`, 'Your risk drops by 2'],
     win: ['no', 'No. It costs spaces, trust and attention at once. Keeping risk low is how you avoid it.'],
   },
@@ -140,9 +141,83 @@ export const GLOSSARY = {
     down: ['Algorithm Shift: brands with a contract but no trending partner lose 5 attention'],
     win: ['maybe', 'Sometimes. It doesn\'t score by itself, but it tells brands which influencer to sign this round.'],
   },
+  dealSpace: {
+    title: 'Deal space (D)',
+    what: 'A space that widens who a brand can do business with.',
+    upLabel: 'What happens',
+    up: ['A brand standing on a Deal space after the roll can offer a contract to any influencer on the board that round', `Anywhere else, a brand can only offer to influencers within ${CFG.offerRange} spaces of it`],
+    downLabel: 'What it doesn\'t do',
+    down: ['Nothing extra for an influencer standing on it'],
+    win: ['maybe', 'For brands, yes: it lets you sign the trending influencer even when they are far away. Influencers gain nothing here.'],
+  },
+  eventSpace: {
+    title: 'Event space (E)',
+    what: 'A space that can put your team at the center of the round\'s true-story flop.',
+    upLabel: 'What happens',
+    up: ['Of the teams that land on an Event space, the one with the lowest roll gets the round\'s flop aimed at it', 'The other teams on Event spaces get minor buzz: +5 attention and +1 risk', 'If nobody lands on one, the round\'s event affects everyone instead'],
+    downLabel: 'What the flop can do',
+    down: ['Lean in at High trust: +25 attention and +3 spaces', 'Lean in at Low trust: −2 trust and back 1 space', 'The other teams react to your flop and move too'],
+    win: ['maybe', 'It can go either way. With High trust a flop is a chance to jump ahead; with Low trust it is a trap. Viral roads have more Event spaces.'],
+  },
+  talent: {
+    title: 'Talent space (T)',
+    what: 'In this version, a Talent space does nothing when you land on it. In the original board design it is where computer influencers wait for offers.',
+    up: [], down: [],
+    win: ['neutral', 'No. It is just a step along the road.'],
+  },
+  feed: {
+    title: 'Feed space (F)',
+    what: 'An ordinary day of posting. Nothing extra happens when you land here.',
+    up: [], down: [],
+    win: ['neutral', 'No. It is just a step along the road; your attention still grows by your profile\'s amount at the end of the round, like everyone\'s.'],
+  },
+  fork: {
+    title: 'Fork (Y)',
+    what: 'Where the road splits in two. There are two forks, and you choose a road at each one.',
+    upLabel: 'How to choose',
+    up: ['Pick Quiet or Viral in the deal window before your piece reaches the fork', 'If you don\'t pick, you take the quiet road'],
+    downLabel: 'The two roads',
+    down: ['Quiet road: 2 spaces longer, calmer, no extra risk', 'Viral road: 2 spaces shorter, more Event spaces, +1 risk'],
+    win: ['maybe', 'It depends on your risk and trust. The viral road gets you to the prize sooner but raises your chance of a backlash and puts you in line for more flops.'],
+  },
+  viralRoad: {
+    title: 'Viral road',
+    what: 'The shortcut at each fork, drawn with pink stripes. Taking both makes the trip 32 spaces instead of 36.',
+    upLabel: 'Good',
+    up: ['2 spaces shorter at each fork', 'More Event spaces, so more chances at a flop that pays when your trust is High'],
+    downLabel: 'Costly',
+    down: ['+1 risk each time you take it', 'More Event spaces, so more chances at a flop that hurts when your trust is Low'],
+    win: ['maybe', 'It can. It is the faster road to the finish prize, paid for in risk. Lower your risk first, or take it when your trust is High.'],
+  },
+  finish: {
+    title: 'Finish (the castle)',
+    what: `The end of the road. It counts as a payday too: attention × trust × $100.`,
+    upLabel: 'What you win',
+    up: [`The first team to get here wins the ${money(CFG.prize)} prize`, 'If nobody gets here by the last round, the team furthest along wins it', 'A team that finishes is safe from backlash and sits out later events'],
+    down: [],
+    win: ['yes', 'Yes. It is the one prize the whole class races for.'],
+  },
+  brand: {
+    title: 'Brand (square piece)',
+    what: 'A company. Brands start with $40,000 and are ranked against other brands.',
+    upLabel: 'How brands earn',
+    up: ['Paydays: attention × trust × $100', 'Signing influencers to borrow their attention, which makes paydays bigger', 'The finish prize'],
+    downLabel: 'What brands spend',
+    down: [`Influencer fees (usually ${money(CFG.fee)})`, `Lowering risk: ${money(CFG.buy.brand)} a point`],
+    win: ['maybe', 'Your role decides who you are compared with. A brand wins by having the most profit among brands.'],
+  },
+  influencer: {
+    title: 'Influencer (round piece)',
+    what: 'A creator people follow. Influencers start with $5,000, have one trend tag, and are ranked against other influencers.',
+    upLabel: 'How influencers earn',
+    up: ['Fees from brand deals, paid straight into cash', 'Paydays: attention × trust × $100', 'The finish prize'],
+    downLabel: 'What to watch',
+    down: ['Holding two deals at once costs 1 trust a round', `Lowering risk: ${money(CFG.buy.infl)} a point`],
+    win: ['maybe', 'Your role decides who you are compared with. An influencer wins by having the most profit among influencers.'],
+  },
 };
 const TERM_ALIAS = { att: 'attention', money: 'cash', deal: 'contract', contracts: 'contract', trending: 'trend' };
-const VERDICT = { yes: 'Helps you win', no: 'Works against you', maybe: 'Helps indirectly' };
+const VERDICT = { yes: 'Helps you win', no: 'Works against you', maybe: 'Helps indirectly', neutral: 'No effect on winning' };
 
 // A clickable game word. The label defaults to the glossary title.
 export function term(key, label) {
@@ -169,7 +244,7 @@ function openTerm(key, from) {
   el._from = from;
   el.innerHTML = `<div class="modal term-card stack" role="dialog" aria-modal="true" aria-labelledby="termTitle">
     <h2 id="termTitle">${esc(g.title)}</h2><p>${esc(g.what)}</p>
-    ${list('Goes up', g.up)}${list(key === 'backlash' ? 'What it does' : 'Goes down', g.down)}
+    ${list(g.upLabel || 'Goes up', g.up)}${list(g.downLabel || 'Goes down', g.down)}
     <div class="verdict ${g.win[0]}"><b>${VERDICT[g.win[0]]}.</b> ${esc(g.win[1])}</div>
     <div class="row"><button class="btn primary" type="button" data-close-term>Got it</button></div></div>`;
   el.addEventListener('click', e => { if (e.target === el || e.target.closest('[data-close-term]')) closeTerm(); });
@@ -185,7 +260,12 @@ export function installGlossary() {
     e.stopPropagation();
     openTerm(b.dataset.term, b);
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTerm(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeTerm();
+    // the board key rows are SVG, not buttons, so give them Enter and Space
+    const b = e.target.closest?.('[data-term]');
+    if (b && b.tagName !== 'BUTTON' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openTerm(b.dataset.term, b); }
+  });
 }
 
 export const HOW_TO = `

@@ -1,6 +1,7 @@
 // The candy-village board: tiles, roads, signs, key, and the raised game
 // pieces. Shared by the host's projected screen and every phone.
 import { CFG, SEGS, START, seg, buildPath } from './rules.js';
+import { term } from './ui.js';
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const initial = t => (t.isPlayer ? '★' : (t.name.replace(/^@/, '')[0] || '?').toUpperCase());
@@ -8,6 +9,8 @@ const initial = t => (t.isPlayer ? '★' : (t.name.replace(/^@/, '')[0] || '?').
 const SPACE_COLOR = { Deal: "var(--mint)", Feed: "#f6e9f1", Event: "var(--accent)", Talent: "var(--lilac)", Payday: "var(--gold)", Fork: "#ffffff", Finish: "var(--gold)", Start: "#ffffff" };
 const PRIZE_SHORT = '$' + (CFG.prize >= 1e6 ? `${CFG.prize / 1e6}M` : `${CFG.prize / 1000}K`);
 const SPACE_GLYPH = { Deal: "D", Feed: "F", Event: "E", Talent: "T", Payday: "$", Fork: "Y", Finish: PRIZE_SHORT, Start: "GO" };
+// which glossary card each space type opens
+const SPACE_TERM = { Deal: 'dealSpace', Feed: 'feed', Event: 'eventSpace', Talent: 'talent', Payday: 'payday', Fork: 'fork', Finish: 'finish' };
 const KEY_ROWS = [["Deal", "Deal"], ["Feed", "Feed"], ["Event", "Event"], ["Talent", "Talent"], ["Payday", "Payday"], ["Fork", "Fork"], ["Finish", `Finish: ${PRIZE_SHORT}`]];
 // a solid sign so road names read from across the room
 function boardSign(x, y, text, size, fill, ink, rot = 0) {
@@ -73,18 +76,19 @@ function drawBoardInto(svg, legend) {
   KEY_ROWS.forEach(([type, label], i) => {
     const cy = ky + 5.4 + i * rowH, glyph = SPACE_GLYPH[type];
     const dark = type === "Feed" || type === "Fork";
+    h += `<g class="key-row" data-term="${SPACE_TERM[type]}" role="button" tabindex="0" aria-label="What is ${type}?"><rect x="${kx + 0.6}" y="${cy - 1.4}" width="17.8" height="2.8" fill="transparent"/>`;
     h += `<circle cx="${kx + 2.6}" cy="${cy}" r="1.25" fill="${SPACE_COLOR[type]}" stroke="rgba(60,20,50,.55)" stroke-width=".3"/>`;
     h += `<text x="${kx + 2.6}" y="${cy + 0.5}" text-anchor="middle" font-size="${glyph.length > 3 ? 0.8 : glyph.length > 1 ? 1.1 : 1.4}" font-family="Bagel Fat One, system-ui" fill="${dark ? "#5b2f55" : "#ffffff"}">${glyph}</text>`;
-    h += `<text x="${kx + 4.6}" y="${cy + 0.65}" font-size="1.8" font-family="Nunito Sans, system-ui" font-weight="800" fill="#1f0d24">${label}</text>`;
+    h += `<text x="${kx + 4.6}" y="${cy + 0.65}" font-size="1.8" font-family="Nunito Sans, system-ui" font-weight="800" fill="#1f0d24" text-decoration="underline">${label}</text></g>`;
   });
   h += `</g>`;
   h += `<defs><filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation=".45"/></filter></defs>`;
   h += `<g id="pieces"></g>`;
   svg.innerHTML = h;
-  if (legend) legend.innerHTML = [["Deal", "D · Deal: brands can offer to anyone"], ["Event", "E · Event: a true story fires"], ["Talent", "T · Talent"], ["Payday", "$ · Payday: attention × trust × $100"], ["Feed", "F · Feed"], ["Fork", "Y · Fork: pick a road"]]
-    .map(([t, l]) => `<span><i style="background:${SPACE_COLOR[t]}"></i>${l}</span>`).join("") +
-    `<span><i style="background:repeating-linear-gradient(45deg,#e3367a 0 3px,#fff 3px 6px)"></i>Viral road: shorter, more events, +1 risk</span>` +
-    `<span><i style="border-radius:3px;background:#2f8fd6"></i>Square piece = brand</span><span><i style="background:#23a58a"></i>Round piece = influencer</span>` +
+  if (legend) legend.innerHTML = [["Deal", "D · Deal: brands can offer to anyone"], ["Event", "E · Event: a true story fires"], ["Talent", "T · Talent"], ["Payday", "$ · Payday: attention × trust × $100"], ["Feed", "F · Feed"], ["Fork", "Y · Fork: pick a road"], ["Finish", `${PRIZE_SHORT} · Finish: the prize`]]
+    .map(([t, l]) => `<span><i style="background:${SPACE_COLOR[t]}"></i>${term(SPACE_TERM[t], l)}</span>`).join("") +
+    `<span><i style="background:repeating-linear-gradient(45deg,#e3367a 0 3px,#fff 3px 6px)"></i>${term('viralRoad', 'Viral road: shorter, more events, +1 risk')}</span>` +
+    `<span><i style="border-radius:3px;background:#2f8fd6"></i>${term('brand', 'Square piece = brand')}</span><span><i style="background:#23a58a"></i>${term('influencer', 'Round piece = influencer')}</span>` +
     `<span><i style="background:#ffd23f;border-color:#ffffff"></i>Tall piece with a gold flashing rim = you</span>`;
 }
 

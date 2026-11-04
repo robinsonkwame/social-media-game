@@ -2,7 +2,7 @@
 // sim/RESULTS.md; change them there first, then here.
 
 // Shown at the bottom of every page. Bump it with each release you push.
-export const VERSION = '1.2.0';
+export const VERSION = '1.3.0';
 
 export const CFG = {
   rounds: 6,               // default; the host can change it (roundChoices)

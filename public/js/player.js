@@ -445,6 +445,29 @@ $('phaseCard').addEventListener('input', e => {
   if (e.target.id === 'raise') { draft.raise = Number(e.target.value); $('raiseLabel').textContent = money(draft.raise); }
 });
 
+// ---------------------------------------------------------------- board zoom
+
+// Zooms the board to twice its size around your piece; drag to look around.
+function centerOnMe(smooth = true) {
+  const v = $('boardView'), me = v.querySelector('.piece.me');
+  if (!me) return;
+  const vr = v.getBoundingClientRect(), r = me.getBoundingClientRect();
+  v.scrollTo({
+    left: v.scrollLeft + r.left - vr.left - (vr.width - r.width) / 2,
+    top: v.scrollTop + r.top - vr.top - (vr.height - r.height) / 2,
+    behavior: smooth ? 'smooth' : 'auto',
+  });
+}
+$('zoomBtn').addEventListener('click', () => {
+  const on = !$('boardView').classList.contains('zoomed');
+  $('boardView').classList.toggle('zoomed', on);
+  $('zoomBtn').textContent = on ? 'Zoom out' : 'Zoom in';
+  $('zoomBtn').setAttribute('aria-pressed', on);
+  $('findMeBtn').hidden = !on;
+  if (on) centerOnMe(false);
+});
+$('findMeBtn').addEventListener('click', () => centerOnMe());
+
 // ---------------------------------------------------------------- rules overlay
 
 installGlossary();

@@ -30,7 +30,10 @@
 
 <div class="app" id="gameView" hidden>
   <div class="board-wrap">
-    <svg id="board" viewBox="0 0 100 100" role="img" aria-label="Candy village game board"></svg>
+    <div class="board-stage">
+      <div class="board-view" id="boardView"><svg id="board" viewBox="0 0 100 100" role="img" aria-label="Candy village game board"></svg></div>
+      <div class="board-zoom"><button class="btn" id="zoomBtn" type="button" aria-pressed="false">Zoom in</button><button class="btn" id="findMeBtn" type="button" hidden>Find me</button></div>
+    </div>
     <div class="legend" id="legend"></div>
   </div>
   <div class="side">
