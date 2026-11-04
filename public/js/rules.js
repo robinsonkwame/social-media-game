@@ -1,6 +1,9 @@
 // Balance values and the board. Numbers come from the simulation in
 // sim/RESULTS.md; change them there first, then here.
 
+// Shown at the bottom of every page. Bump it with each release you push.
+export const VERSION = '1.1.0';
+
 export const CFG = {
   rounds: 6, maxRounds: 8,
   prize: 50000,           // the finish prize; every screen reads it from here

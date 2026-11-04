@@ -2,10 +2,16 @@
 import { CARDS } from './cards.js';
 import { band, BAND_NAME } from './rules.js';
 import { netOf, trustChangeOf, money, describeNextEvent } from './engine.js';
-import { CFG } from './rules.js';
+import { CFG, VERSION } from './rules.js';
 
 export { money };
 export const $ = id => document.getElementById(id);
+
+// Fills the page footer with the release number.
+export function showVersion() {
+  const el = document.getElementById('version');
+  if (el) el.textContent = `Viral Path v${VERSION}`;
+}
 export const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export const roleName = r => (r === 'brand' ? 'brand' : 'influencer');
 export const trustLabel = t => `${t}/10 ${BAND_NAME[band(t)]}`;

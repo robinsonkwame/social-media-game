@@ -31,6 +31,7 @@ With the 1–3 die, pieces usually get about halfway in six rounds, so the finis
 Leaderboards show **Cash** (money on hand, never below $0), **Profit** (the score: money made or lost since the start, so it goes negative after spending) and **Trust** with its change since the start (for example `8 +1`).
 **+ Bot brand / + Bot influencer / Even the sides** add computer teams when one side is short.
 **Download CSV** exports one row per team per round.
+The version shown at the bottom of every page is `VERSION` in `public/js/rules.js`; bump it when you push a release.
 The finish prize is `prize` in `public/js/rules.js`; change it there and every screen, the board and the leaderboards follow.
 Underlined game words (Cash, Profit, Attention, Trust, Risk, Space, Payday, Deals, Trend, Backlash) open a short card: what it is, what raises and lowers it, and whether it helps you win. Edit the text in `GLOSSARY` in `public/js/ui.js`.
 

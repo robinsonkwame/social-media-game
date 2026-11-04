@@ -5,10 +5,11 @@ import { createBoard } from './board.js';
 import { CFG } from './rules.js';
 import { CARDS } from './cards.js';
 import { csvRows, netOf, money } from './engine.js';
-import { $, esc, storyHtml, leaderboard, feedHtml, PHASE_LABEL, roleName, nextEventHtml, eventKindHtml, MOVE_LINE, installGlossary } from './ui.js';
+import { $, esc, storyHtml, leaderboard, feedHtml, PHASE_LABEL, roleName, nextEventHtml, eventKindHtml, MOVE_LINE, installGlossary, showVersion } from './ui.js';
 
 const api = await createApi();
 installGlossary();
+showVersion();
 const debug = isDebug();
 const KEY = 'vp:hostKey';
 let key = '';

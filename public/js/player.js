@@ -4,7 +4,7 @@ import { createBoard } from './board.js';
 import { CFG, PROFILES, TAGS, FLOP, band, BAND_NAME, FORK1, fork2Index } from './rules.js';
 import { CARDS } from './cards.js';
 import { inRange, spaceOf, lengthOf, choicesFor, netOf, trustChangeOf, money } from './engine.js';
-import { $, esc, storyHtml, leaderboard, feedHtml, HOW_TO, PHASE_LABEL, roleName, signed, nextEventHtml, eventKindHtml, MOVE_LINE, term, installGlossary } from './ui.js';
+import { $, esc, storyHtml, leaderboard, feedHtml, HOW_TO, PHASE_LABEL, roleName, signed, nextEventHtml, eventKindHtml, MOVE_LINE, term, installGlossary, showVersion } from './ui.js';
 
 const api = await createApi();
 const solo = api.mode === 'solo';  // solo practice: you run the host steps yourself
@@ -444,6 +444,7 @@ $('phaseCard').addEventListener('input', e => {
 // ---------------------------------------------------------------- rules overlay
 
 installGlossary();
+showVersion();
 
 $('rulesBtn').addEventListener('click', () => {
   const root = $('overlayRoot');
