@@ -5,9 +5,10 @@ import { createBoard } from './board.js';
 import { CFG } from './rules.js';
 import { CARDS } from './cards.js';
 import { csvRows, netOf, money } from './engine.js';
-import { $, esc, storyHtml, leaderboard, feedHtml, PHASE_LABEL, roleName, nextEventHtml, eventKindHtml, SPEED_LINE } from './ui.js';
+import { $, esc, storyHtml, leaderboard, feedHtml, PHASE_LABEL, roleName, nextEventHtml, eventKindHtml, MOVE_LINE, installGlossary } from './ui.js';
 
 const api = await createApi();
+installGlossary();
 const debug = isDebug();
 const KEY = 'vp:hostKey';
 let key = '';
@@ -37,13 +38,13 @@ $('keyForm').addEventListener('submit', e => {
 // The one big next-step button for each phase, plus what it does.
 const STEPS = {
   lobby: [['start', 'Start the game', 'Locks in teams and opens round 1. Late teams can still join.']],
-  ready: [['roll', 'Roll the dice', 'Rolls for every team at once, moves the pieces, checks risk, and reveals the trend. Then the deal window opens.']],
   deals: [['finalCall', 'Start the final call', 'Applies risk buy-downs and road choices and collects offers. Brands whose influencer has several offers may raise once.']],
   final: [['closeDeals', 'Close deals', 'Influencers\' choices are final and contracts are signed.']],
   dealt: [['fire', 'Show the next event', 'Puts a true-story event card on every screen with no clock, so teams can read the story. You start the countdown next.']],
 };
 
 function phaseButtons(g) {
+  if (g.phase === 'ready') return [['roll', 'Roll the dice', `Every team rolls 1-${g.diceSides || 6} at once and moves, then a separate 1-${CFG.riskDie} risk check runs, and the trend is revealed. Then the deal window opens.`]];
   if (g.phase === 'results') {
     if (g.round < g.rounds) return [['next', `Start round ${g.round + 1}`, 'Clears the event and gets ready for the next roll.']];
     const out = [];
@@ -54,8 +55,8 @@ function phaseButtons(g) {
   if (g.phase === 'finished') return [];
   if (g.phase === 'event') {
     if (!g.event.timed) return [['resolve', 'Apply the event', 'This card has no choices. It applies to everyone and ends the round.']];
-    if (!g.event.openedAt) return [['startTimer', `Start the ${g.reactionSeconds || CFG.reactionSeconds}-second countdown`, 'Opens the choices on every phone. The first two teams to react get bonus spaces.']];
-    return [['addTime', '+15 seconds', 'Gives everyone a little longer.'], ['resolve', 'Close the event and score it', 'Applies everyone\'s choice, speed bonuses and movement, then ends the round.']];
+    if (!g.event.openedAt) return [['startTimer', `Start the ${g.reactionSeconds || CFG.reactionSeconds}-second countdown`, 'Opens the choices on every phone. Each team\'s first tap is final.']];
+    return [['addTime', '+15 seconds', 'Gives everyone a little longer.'], ['resolve', 'Close the event and score it', 'Applies everyone\'s choice and movement, then ends the round.']];
   }
   return STEPS[g.phase] || [];
 }
@@ -71,6 +72,10 @@ function renderControls() {
     phaseButtons(g).map(([a, label, hint], i) => `<button class="btn ${i === phaseButtons(g).length - 1 ? 'primary' : ''}" data-action="${a}" type="button" ${busy ? 'disabled' : ''}>${esc(label)}</button><p class="small muted" style="margin:0">${esc(hint)}</p>`).join('') +
     (g.phase === 'finished' ? '<p class="small">Game over. Download the CSV, or reset to play again.</p>' : '');
   if (document.activeElement !== $('codeInput')) $('codeInput').value = g.code || '';
+  if (document.activeElement !== $('diceSelect')) {
+    const cur = g.diceSides || 6;
+    $('diceSelect').innerHTML = CFG.diceChoices.map(v => `<option value="${v}" ${v === cur ? 'selected' : ''}>1-${v}${v === CFG.diceSides ? ' (recommended)' : ''}</option>`).join('');
+  }
   if (document.activeElement !== $('timerSelect')) {
     const cur = g.reactionSeconds || CFG.reactionSeconds;
     const opts = [...new Set([...CFG.reactionChoices, cur])].sort((a, b) => a - b);
@@ -135,6 +140,7 @@ function renderPlay() {
 }
 $('codeBtn').addEventListener('click', () => hostAction('code', { code: $('codeInput').value }));
 $('timerSelect').addEventListener('change', e => hostAction('timer', { seconds: Number(e.target.value) }));
+$('diceSelect').addEventListener('change', e => hostAction('dice', { sides: Number(e.target.value) }));
 $('unstickBtn').addEventListener('click', () => hostAction('unstick'));
 $('resetBtn').addEventListener('click', () => {
   if (armed === 'reset') { armed = ''; hostAction('reset'); }
@@ -213,7 +219,7 @@ function renderStage() {
     case 'dealt': {
       const signed = g.partnerships.filter(p => p.round === g.round && p.signed);
       h = `<h2>Contracts signed</h2>${signed.length ? `<ul>${signed.map(p => `<li><b>${esc(g.teams[p.brand]?.name)}</b> + <b>${esc(g.teams[p.infl]?.name)}</b> for ${money(p.amt)}</li>`).join('')}</ul>` : '<p class="muted">No contracts this round.</p>'}
-        ${nextEventHtml(g, null)}<p class="small muted">${esc(SPEED_LINE)}</p>`;
+        ${nextEventHtml(g, null)}<p class="small muted">${esc(MOVE_LINE)}</p>`;
       break;
     }
     case 'event': {
@@ -223,8 +229,8 @@ function renderStage() {
         <div>${eventKindHtml(g, null)}</div>
         <p class="event-prompt">${esc(prompt)}</p>
         ${!e.timed ? '<p class="small muted">No choices this time. It applies to everyone.</p>'
-          : e.openedAt ? `<div class="timer" aria-hidden="true"><div id="timerBar" style="width:100%"></div></div><p><b>${esc(SPEED_LINE)}</b></p><div class="fastest" id="fastest"></div>`
-          : `<p class="small muted">Reading time. Choices open when the ${g.reactionSeconds || CFG.reactionSeconds}-second countdown starts. ${esc(SPEED_LINE)}</p>`}
+          : e.openedAt ? `<div class="timer" aria-hidden="true"><div id="timerBar" style="width:100%"></div></div><p><b>${esc(MOVE_LINE)}</b></p><div class="fastest" id="fastest"></div>`
+          : `<p class="small muted">Reading time. Choices open when the ${g.reactionSeconds || CFG.reactionSeconds}-second countdown starts. ${esc(MOVE_LINE)}</p>`}
         ${storyHtml(e.card, false)}`;
       break;
     }
@@ -251,7 +257,7 @@ function renderStage() {
   tickCountdown();
 }
 
-// Fastest reactions so far (names and times only, so choices stay a surprise).
+// Who has locked in so far (names only, so choices stay a surprise).
 function updateFastest() {
   const el = $('fastest'), e = S?.game.event;
   if (!el || !e?.openedAt) return;
@@ -260,8 +266,8 @@ function updateFastest() {
     ...Object.entries(S.acts || {}).map(([s, a]) => ({ s, at: a.at, choice: a.choice })),
     ...Object.entries(e.bots || {}).filter(([, b]) => b.at && b.at <= t).map(([s, b]) => ({ s, at: b.at, choice: b.choice })),
   ].filter(x => x.choice !== 'Out' && x.s !== e.target).sort((a, b) => a.at - b.at);
-  el.innerHTML = list.length ? '<div class="eyebrow">Fastest so far</div>' + list.slice(0, 5).map((x, i) => `<div>${i + 1}. <b>${esc(S.game.teams[x.s]?.name || x.s)}</b> · ${((x.at - e.openedAt) / 1000).toFixed(1)}s${i < CFG.speedBonus.length ? ` · +${CFG.speedBonus[i]} space${CFG.speedBonus[i] > 1 ? 's' : ''}` : ''}</div>`).join('')
-    : '<div class="small muted">No reactions yet. Be first for +2 spaces.</div>';
+  el.innerHTML = list.length ? `<div class="eyebrow">Locked in so far (${list.length})</div><div>${list.map(x => `<b>${esc(S.game.teams[x.s]?.name || x.s)}</b>`).join(' · ')}</div>`
+    : '<div class="small muted">No reactions yet.</div>';
 }
 
 function tickCountdown() {

@@ -1,7 +1,7 @@
 # social-media-game
 
 **Viral Path**, the TISA3630 social media game. Brand and influencer teams race
-along a candy-village board to a $1,000,000 finish, sign deals, and react to
+along a candy-village board to a $50,000 finish, sign deals, and react to
 real social media flops. Each event card cites the true story behind it.
 
 - `Viral Path Social Media Campaign Game, Design Specification.md`: the rules
@@ -14,22 +14,25 @@ real social media flops. Each event card cites the true story behind it.
 |---|---|---|
 | `/host` | the teacher | Controls on the left; the projected board, event panel and leaderboards on the right. You decide when to roll, when deals close, and when the next event fires. You can also join a team yourself. |
 | `/` | each team, on a phone | Join with a team name and profile, then follow the round: deals, final call, timed reactions with **Learn more**, and the participation code at the end. |
-| `/solo` | anyone | Practice: one team against five bots on the same rules, with you pressing the teacher's buttons. Runs in the browser; a reload picks up where you left off. |
+| `/solo` | anyone | Practice: one team against five bots on the same rules, with you pressing the teacher's buttons. Pick the die before you start; **Restart** (click twice) starts over. Runs in the browser; a reload picks up where you left off. |
 
 ### Running a round from `/host`
 
-1. **Roll the dice**: every team rolls at once, pieces move, risk is checked, the trend is revealed. The deal window opens.
+1. **Roll the dice**: every team rolls at once and moves (1–3 by default; pick 1–4, 1–5 or 1–6 under **Dice**), a separate 1–6 risk check runs, and the trend is revealed. The deal window opens.
 2. **Start the final call**: buy-downs and road choices apply; influencers see their offers; brands with competition may raise once.
 3. **Close deals**: contracts are signed.
 4. **Show the next event**: a true-story card appears on every screen with the story open and no clock, so teams can read it. Everyone already knows from the deal window whether it's a flop aimed at one team (it landed on an Event space with the lowest roll) or an event that affects everyone. Cards with no choices (Algorithm Shift, Trend Spike) just need **Apply the event**.
-5. **Start the countdown**: choices open on every phone, and the projector lists the fastest teams (the first two get +2 and +1 bonus spaces) (60 seconds by default; set it under **Reaction countdown**, and press **+15 seconds** if the class needs longer).
-6. **Close the event and score it**: choices, speed bonuses and movement apply, the round ends, and everyone sees what really happened.
+5. **Start the countdown**: choices open on every phone, and the projector lists who has locked in. Each team's first tap is final. The countdown is 60 seconds by default; set it under **Reaction countdown**, and press **+15 seconds** if the class needs longer.
+6. **Close the event and score it**: choices and movement apply, the round ends, and everyone sees what really happened.
 7. **Start the next round**, or after round 6 **Extend to 8 rounds** or **Finish the game**.
 
 Set the participation code in the lobby; every phone shows it at the end.
+With the 1–3 die, pieces usually get about halfway in six rounds, so the finish prize normally goes to the piece furthest along. Pick a bigger die if you want teams to reach the castle.
 Leaderboards show **Cash** (money on hand, never below $0), **Profit** (the score: money made or lost since the start, so it goes negative after spending) and **Trust** with its change since the start (for example `8 +1`).
 **+ Bot brand / + Bot influencer / Even the sides** add computer teams when one side is short.
 **Download CSV** exports one row per team per round.
+The finish prize is `prize` in `public/js/rules.js`; change it there and every screen, the board and the leaderboards follow.
+Underlined game words (Cash, Profit, Attention, Trust, Risk, Space, Payday, Deals, Trend, Backlash) open a short card: what it is, what raises and lowers it, and whether it helps you win. Edit the text in `GLOSSARY` in `public/js/ui.js`.
 
 ## Try it without deploying (simulated mode)
 

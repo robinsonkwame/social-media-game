@@ -71,3 +71,17 @@ python3 sim/sweep.py
 python3 sim/refine.py
 ```
 Results are saved to `sim/sweep_results.json` and `sim/refine_results.json`.
+
+## Update: 1–3 die, no speed bonus
+
+After playtesting, the speed bonus was removed (a team that tapped first every round gained about 12 spaces in six rounds) and the movement die became a host setting, 1–3 by default. The risk check is now its own 1–6 roll, so backlash odds don't change with the die. This Python model was not rerun; these numbers come from 400 all-bot games (3 brands, 3 influencers) through the real engine in `public/js`:
+
+| Die | Speed bonus | Someone finishes by round 6 | by round 8 | Average progress after 6 rounds |
+|---|---|---|---|---|
+| 1–6 | +2 / +1 (old) | 63% | 100% | 76% |
+| 1–6 | none | 25% | 95% | 69% |
+| 1–5 | none | 2% | 64% | 61% |
+| 1–4 | none | 0% | 13% | 52% |
+| 1–3 | none | 0% | 0% | 43% |
+
+With 1–3, the $1M almost always goes to the piece furthest along rather than a finisher.

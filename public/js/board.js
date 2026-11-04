@@ -1,13 +1,14 @@
 // The candy-village board: tiles, roads, signs, key, and the raised game
 // pieces. Shared by the host's projected screen and every phone.
-import { SEGS, START, seg, buildPath } from './rules.js';
+import { CFG, SEGS, START, seg, buildPath } from './rules.js';
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const initial = t => (t.isPlayer ? '★' : (t.name.replace(/^@/, '')[0] || '?').toUpperCase());
 
 const SPACE_COLOR = { Deal: "var(--mint)", Feed: "#f6e9f1", Event: "var(--accent)", Talent: "var(--lilac)", Payday: "var(--gold)", Fork: "#ffffff", Finish: "var(--gold)", Start: "#ffffff" };
-const SPACE_GLYPH = { Deal: "D", Feed: "F", Event: "E", Talent: "T", Payday: "$", Fork: "Y", Finish: "1M", Start: "GO" };
-const KEY_ROWS = [["Deal", "Deal"], ["Feed", "Feed"], ["Event", "Event"], ["Talent", "Talent"], ["Payday", "Payday"], ["Fork", "Fork"], ["Finish", "Finish: $1M"]];
+const PRIZE_SHORT = '$' + (CFG.prize >= 1e6 ? `${CFG.prize / 1e6}M` : `${CFG.prize / 1000}K`);
+const SPACE_GLYPH = { Deal: "D", Feed: "F", Event: "E", Talent: "T", Payday: "$", Fork: "Y", Finish: PRIZE_SHORT, Start: "GO" };
+const KEY_ROWS = [["Deal", "Deal"], ["Feed", "Feed"], ["Event", "Event"], ["Talent", "Talent"], ["Payday", "Payday"], ["Fork", "Fork"], ["Finish", `Finish: ${PRIZE_SHORT}`]];
 // a solid sign so road names read from across the room
 function boardSign(x, y, text, size, fill, ink, rot = 0) {
   const w = text.length * size * 0.66 + size * 1.4, hgt = size * 1.6;
@@ -57,7 +58,7 @@ function drawBoardInto(svg, legend) {
     const fill = SPACE_COLOR[s.type];
     h += `<g class="tile"><circle cx="${s.x}" cy="${s.y}" r="${r}" fill="${fill}" stroke="rgba(60,20,50,.55)" stroke-width=".45"/>`;
     const g = SPACE_GLYPH[s.type];
-    if (g) h += `<text x="${s.x}" y="${s.y + (s.type === "Finish" ? 0.9 : 0.8)}" text-anchor="middle" font-size="${s.type === "Finish" ? 2.6 : (g.length > 1 ? 1.6 : 2.4)}" font-family="Bagel Fat One, system-ui" fill="${s.type === "Feed" || s.type === "Fork" || s.type === "Start" ? "#5b2f55" : "#ffffff"}">${g}</text>`;
+    if (g) h += `<text x="${s.x}" y="${s.y + (s.type === "Finish" ? 0.9 : 0.8)}" text-anchor="middle" font-size="${s.type === "Finish" ? (g.length > 3 ? 1.9 : 2.6) : (g.length > 1 ? 1.6 : 2.4)}" font-family="Bagel Fat One, system-ui" fill="${s.type === "Feed" || s.type === "Fork" || s.type === "Start" ? "#5b2f55" : "#ffffff"}">${g}</text>`;
     h += `</g>`;
   }
   // road signs: fork 1 big, fork 2 smaller
@@ -73,7 +74,7 @@ function drawBoardInto(svg, legend) {
     const cy = ky + 5.4 + i * rowH, glyph = SPACE_GLYPH[type];
     const dark = type === "Feed" || type === "Fork";
     h += `<circle cx="${kx + 2.6}" cy="${cy}" r="1.25" fill="${SPACE_COLOR[type]}" stroke="rgba(60,20,50,.55)" stroke-width=".3"/>`;
-    h += `<text x="${kx + 2.6}" y="${cy + 0.5}" text-anchor="middle" font-size="${glyph.length > 1 ? 1.1 : 1.4}" font-family="Bagel Fat One, system-ui" fill="${dark ? "#5b2f55" : "#ffffff"}">${glyph}</text>`;
+    h += `<text x="${kx + 2.6}" y="${cy + 0.5}" text-anchor="middle" font-size="${glyph.length > 3 ? 0.8 : glyph.length > 1 ? 1.1 : 1.4}" font-family="Bagel Fat One, system-ui" fill="${dark ? "#5b2f55" : "#ffffff"}">${glyph}</text>`;
     h += `<text x="${kx + 4.6}" y="${cy + 0.65}" font-size="1.8" font-family="Nunito Sans, system-ui" font-weight="800" fill="#1f0d24">${label}</text>`;
   });
   h += `</g>`;

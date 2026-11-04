@@ -22,6 +22,8 @@
     <div class="field"><label>Pick a profile</label><div class="picker" id="profilePicker"></div></div>
     <div class="field" id="tagField" hidden><label for="tag">Your trend tag</label><select id="tag"></select>
       <span class="small muted">When your tag trends, brands that sign you get all of your attention.</span></div>
+    <div class="field"><label for="diceSides">Dice</label><select id="diceSides"></select>
+      <span class="small muted">How far each roll moves you. Smaller dice make your choices matter more.</span></div>
         <p class="error" id="joinError" role="alert"></p>
     <div class="row"><button class="btn primary" type="submit" id="joinBtn">Start the race</button></div>
   </form>
@@ -33,7 +35,7 @@
     <div class="legend" id="legend"></div>
   </div>
   <div class="side">
-    <div class="statusbar"><span class="sign">Round <b id="roundSign">–</b> of <span id="roundsTotal">6</span></span><span class="sign">Trend: <b id="trendSign">—</b></span><button class="btn" id="rulesBtn" type="button">How to play</button><button class="btn" id="restartBtn" type="button">Restart</button></div>
+    <div class="statusbar"><span class="sign">Round <b id="roundSign">–</b> of <span id="roundsTotal">6</span></span><span class="sign"><button type="button" class="term" data-term="trend">Trend</button>: <b id="trendSign">—</b></span><button class="btn" id="rulesBtn" type="button">How to play</button><button class="btn" id="restartBtn" type="button">Restart</button></div>
     <section class="card stack" id="phaseCard" aria-live="polite"></section>
     <section class="card stack">
       <div class="phase-head"><h3 id="meName">Your team</h3><span class="chip" id="meRole"></span></div>

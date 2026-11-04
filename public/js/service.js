@@ -130,7 +130,7 @@ export function createService(store, { now = () => Date.now(), rng = Math.random
       else doc = E.checkReaction(game, t, payload, now());
       const key = actKey(game.id, game.round, stage, slug);
       if (stage === 'event') {
-        // the first answer is final, so speed counts
+        // the first answer is final
         if (!(await store.set(key, doc, { ifNew: true }))) throw new GameError('You already locked in an answer');
       } else {
         await store.set(key, doc);
@@ -152,6 +152,7 @@ export function createService(store, { now = () => Date.now(), rng = Math.random
         case 'startTimer': await withGame(g => E.startTimer(g, now())); break;
         case 'addTime': await withGame(g => E.addTime(g, payload.seconds, now())); break;
         case 'timer': await withGame(g => E.setReactionSeconds(g, payload.seconds)); break;
+        case 'dice': await withGame(g => E.setDiceSides(g, payload.sides)); break;
         case 'resolve': await closeStage('event', (g, acts) => E.resolveEvent(g, acts, now(), rng)); break;
         case 'next': await withGame(g => E.nextRound(g)); break;
         case 'extend': await withGame(g => E.extendGame(g)); break;
@@ -176,7 +177,7 @@ export function createService(store, { now = () => Date.now(), rng = Math.random
         }
         case 'reset': {
           const { game: old } = await loadGame();
-          await withGame(g => { Object.keys(g).forEach(k => delete g[k]); Object.assign(g, E.newGame(now(), rng), { code: old.code, reactionSeconds: old.reactionSeconds || g.reactionSeconds }); });
+          await withGame(g => { Object.keys(g).forEach(k => delete g[k]); Object.assign(g, E.newGame(now(), rng), { code: old.code, reactionSeconds: old.reactionSeconds || g.reactionSeconds, diceSides: old.diceSides || g.diceSides }); });
           const keys = await store.list(`g/${old.id}/`);
           await Promise.all(keys.map(k => store.del(k)));
           break;

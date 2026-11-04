@@ -65,9 +65,11 @@ A brand under contract gains half its influencer's current attention each round,
 
 The numbers are set so deals matter. A Heritage brand with no influencer settles near 9 attention and earns about $7,200 per payday; signed to an influencer near 30 attention, it settles near 54 and earns about $43,000. In simulation, a two-round contract still paid off for the brand at a fee of $16,000, the highest fee tested, while a payday of $50 put the break-even fee near $9,000.
 
-Viral Path is a race. The first team to reach the finish, brand or influencer, wins a $1,000,000 prize; if no team finishes, the prize goes to the piece furthest along. Teams that finish in the same phase are ordered by how many spaces of movement they had left. The prize is far larger than any payday, so in simulation the furthest team in a role won that role 69% of the time in six rounds and 89% in eight. The rest of each role's ranking comes from paydays and fees.
+Viral Path is a race. The first team to reach the finish, brand or influencer, wins a $50,000 prize; if no team finishes, the prize goes to the piece furthest along. Teams that finish in the same phase are ordered by how many spaces of movement they had left. The prize is set in one place (`prize` in `public/js/rules.js`), and every screen reads it from there.
 
-A single prize for the whole class is deliberate. In simulation, paying $1,000,000 to the first finisher in each role, or paying every team by its finishing place, let the dice decide most games, with a correlation between a team's roll total and its rank of 0.49 to 0.71. With one prize the correlation is 0.27.
+The prize was $1,000,000, which made the race decide every game: the prize winner always topped their role. At $50,000 it is about the size of a good game's paydays (in 300 six-round all-bot games with the 1–3 die, median profit before the prize was $45,000 for brands and $68,500 for influencers). It changed who came first in the winner's role 21% of the time, against 37% for $1,000,000, so paydays and fees now decide most rankings and the race tips close ones.
+
+A single prize for the whole class is deliberate. In the original simulation, paying $1,000,000 to the first finisher in each role, or paying every team by its finishing place, let the dice decide most games, with a correlation between a team's roll total and its rank of 0.49 to 0.71. With one prize the correlation is 0.27.
 
 Rankings stay within each role because fees move money directly from brands to influencers. In simulation, how hard the bots bid decided which role finished ahead on a shared board, so a shared ranking would mostly measure bidding.
 
@@ -91,7 +93,9 @@ A feed space has no effect beyond the round's base attention. A deal space lets 
 
 Event spaces enter the round's event draw. A payday pays out when a piece lands on or passes it, and the finish counts as the fourth payday on either route. Each payday pays a piece only once, so a piece that slides back and passes it again earns nothing more.
 
-Pieces move by the roll and also by the choices in the reaction window (see "Events and the reaction window"), so the board was lengthened from 32 to 36 spaces. In simulation, some team reached the finish in about 50% of six-round games and 99% of eight-round games, with about 3.3 of 6 teams finishing in eight. On the original 26-space path, a team finished in 97% of six-round games.
+Pieces move by the roll and also by the choices in the reaction window (see "Events and the reaction window"), so the board was lengthened from 32 to 36 spaces. With a six-sided die and the old speed bonus, some team reached the finish in about 50% of six-round games and 99% of eight-round games, with about 3.3 of 6 teams finishing in eight. On the original 26-space path, a team finished in 97% of six-round games.
+
+The game now defaults to a 1–3 die and no speed bonus, which is much slower. In 400 all-bot games through the real engine, pieces averaged 43% of the board after six rounds and no team finished even in eight, so the finish prize normally goes to the piece furthest along. With a 1–4 die, a team finished in 13% of eight-round games; with 1–6, in 25% of six-round and 95% of eight-round games. The instructor picks the die to suit the class.
 
 ## Round sequence and timers
 
@@ -124,9 +128,9 @@ A signed contract runs its full two rounds; no one can walk away from one. An op
 
 ## Risk and the roll
 
-One roll per team per round decides both movement and the risk check. The die is a standard six-sided die, which averages 3.5 spaces per roll.
+Each team gets two rolls per round. The movement roll uses a die the instructor chooses from 1–3 to 1–6, and 1–3 is the default. A smaller die makes choices count for more of each move and keeps pieces from jumping straight past the short viral roads. In solo practice the player picks the die before starting. The risk check is a separate six-sided roll, so changing the movement die leaves backlash odds unchanged.
 
-A backlash hits when a team's risk points exceed its roll. The team loses 1 trust and 10 attention, its piece slides back 3 spaces, and its risk drops by 2, to a minimum of 0. A piece that has finished is safe from backlash.
+A backlash hits when a team's risk points exceed its risk check. The team loses 1 trust and 10 attention, its piece slides back 3 spaces, and its risk drops by 2, to a minimum of 0. A piece that has finished is safe from backlash.
 
 | Risk points | Chance of backlash |
 | --- | --- |
@@ -152,7 +156,7 @@ The prices are high on purpose. At $3,000 and $1,000, buying risk down early was
 
 ## Events and the reaction window
 
-One event per round gets a full reaction window. The card and its true story appear first with no clock, so teams can read what happened before they decide; the instructor then starts the countdown, which is 60 seconds by default and can be set from 30 to 120 seconds, and can add 15 seconds while it runs. Speed bonuses count from the start of the countdown. The event goes to the team with the lowest roll among those landing on event spaces, with ties broken at random, and the card drawn matches that team's role. If no team lands on an event space, an open event is drawn instead.
+One event per round gets a full reaction window. The card and its true story appear first with no clock, so teams can read what happened before they decide; the instructor then starts the countdown, which is 60 seconds by default and can be set from 30 to 120 seconds, and can add 15 seconds while it runs. A team's first answer is final. The event goes to the team with the lowest roll among those landing on event spaces, with ties broken at random, and the card drawn matches that team's role. If no team lands on an event space, an open event is drawn instead.
 
 Who the event targets is settled right after the roll and shown on every screen during the deal window, for example "This round's event is a flop aimed at Gumdrop Co.: they landed on an Event space with the lowest roll" or "Nobody landed on an Event space, so this round's event affects everyone." Pieces do not move between the roll and the event, so the notice stays true. Each event card is labeled the same way when it appears. Algorithm Shift and Trend Spike ask for no choices, so they skip the countdown and the instructor simply applies them.
 
@@ -184,7 +188,7 @@ Movement follows trust, so leaning in moves a High-trust target 3 spaces forward
 
 Every other team, influencers included, chooses Support, Critique, or Stay out in the same window. Critique covers any public commentary at the target's expense, from a serious point to a joke. Support gives +5 attention, no added risk, and 1 space. Critique gives +10 attention, +2 risk, and 2 spaces, and each critiquing team loses 1 trust if the target leaned in at High trust. Joining a Meme Format gives 1 space on top of its attention.
 
-Speed is rewarded on the board. The first team to react, by support or critique, moves forward 2 spaces and the second moves 1, and every phone states this before and during the countdown. The main screen lists the fastest teams so far, with names and times but not their choices, and each team's result says where it placed; the same applies to the first two teams joining a Meme Format. These speed bonuses add to the spaces from the choice itself. Spaces gained this way credit any payday passed at resolution.
+Speed earns nothing extra. An earlier version moved the first two reactors 2 and 1 bonus spaces, but a team that tapped first every round gained about 12 spaces over six rounds and finished too early, so the bonus was removed. The main screen lists which teams have locked in, by name only. Spaces gained from a choice credit any payday passed at resolution.
 
 ## Self-play mode
 
@@ -200,7 +204,7 @@ The bot takes the same role as the learner, and NPC pieces fill the other side.
 | 2 | 4 | Flop event | The learner is the target, picks a response, and sees the bot critique |
 | 3 | 6 | Payday | Attention converts to money at the learner's trust, shown beside the bot's payout |
 | 4 | 8 | Open event and risk | Meme Format, followed by a prompt to buy down risk before the roll |
-| 5 | 10 | Finish | The $1,000,000 finish prize and the same end summary screen used in class |
+| 5 | 10 | Finish | The $50,000 finish prize and the same end summary screen used in class |
 
 The bot follows fixed habits so a learner can anticipate it. It always reacts first to events and buys down risk whenever it holds 4 or more points. It raises its offer whenever it gets the multiple-offers notice. In the tutorial, an NPC influencer holding two offers selects the higher one.
 
@@ -242,7 +246,7 @@ The summary does not report dice luck. In simulation, a team's roll total correl
 
 The class-wide reveal shows the real team names behind each handle and a partnership graph of every contract signed and every offer passed over. For each flop event it also lists the target's attention gain beside the combined gain of the teams that reacted.
 
-The engine logs one row per team per round: roll, position, risk before and after the check, backlash, offers made and selected, event role, reaction choice, attention, trust, and money. The log exports as a CSV file for the instructor.
+The engine logs one row per team per round: movement roll, risk check, position, risk before and after the check, backlash, offers made and selected, event role, reaction choice, attention, trust, and money. The log exports as a CSV file for the instructor.
 
 ## Open questions for playtesting
 

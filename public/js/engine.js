@@ -34,7 +34,7 @@ function say(game, text) {
 export function newGame(now = Date.now(), rng = Math.random) {
   return {
     id: Math.floor(rng() * 36 ** 8).toString(36).padStart(8, '0'),
-    phase: 'lobby', round: 0, rounds: CFG.rounds, closing: null, reactionSeconds: CFG.reactionSeconds,
+    phase: 'lobby', round: 0, rounds: CFG.rounds, closing: null, reactionSeconds: CFG.reactionSeconds, diceSides: CFG.diceSides,
     trend: null, stamp: 0, step: 0, trails: {},
     teams: {}, offers: [], event: null, finishOrder: [], partnerships: [], flopLog: [],
     log: [], winner: null, code: '', createdAt: now, updatedAt: now,
@@ -152,25 +152,36 @@ function beginStep(game) {
 
 // ------------------------------------------------------------------ roll
 
+export const sidesOf = game => game.diceSides || 6;  // games saved before the setting rolled 1-6
+
+export function setDiceSides(game, sides) {
+  const n = Math.round(Number(sides));
+  if (!CFG.diceChoices.includes(n)) throw new GameError(`Pick a die from 1-${CFG.diceChoices[0]} to 1-${CFG.diceChoices.at(-1)}`);
+  game.diceSides = n;
+  say(game, `The dice now roll 1-${n}.`);
+}
+
 export function rollAll(game, rng = Math.random) {
   if (game.phase !== 'ready') throw new GameError('You can roll once the round is ready');
   beginStep(game);
   for (const t of teamsOf(game)) {
     t.cur = { roll: null, riskBefore: t.risk };
     if (t.finished) continue;
-    const r = 1 + Math.floor(rng() * 6);
+    const r = 1 + Math.floor(rng() * sidesOf(game));
+    const check = 1 + Math.floor(rng() * CFG.riskDie);
     t.lastRoll = r;
     t.cur.roll = r;
+    t.cur.riskCheck = check;
     const trail = move(game, t, r, rng);
     let note = `${t.name} rolled ${r}`;
-    if (!t.finished && t.risk > r) {
+    if (!t.finished && t.risk > check) {
       t.trust = Math.max(1, t.trust - 1);
       t.att = Math.max(0, t.att - 10);
       t.risk = Math.max(0, t.risk - 2);
       t.backlashes += 1;
       t.cur.backlash = true;
       trail.push(...move(game, t, -CFG.backlashSlide, rng));
-      note += `: BACKLASH, risk beat the roll (−1 trust, −10 attention, back ${CFG.backlashSlide})`;
+      note += `: BACKLASH, risk ${t.cur.riskBefore} beat the risk check of ${check} (−1 trust, −10 attention, back ${CFG.backlashSlide})`;
     }
     t.cur.riskAfter = t.risk;
     addTrail(game, t, trail);
@@ -215,6 +226,7 @@ export function describeNextEvent(game, meSlug = null) {
   if (n.kind === 'open') line = 'Nobody landed on an Event space, so this round\'s event affects everyone.';
   else if (n.reason === 'round1') line = `Round 1 always opens with a flop aimed at ${name(n.target)}.`;
   else line = `This round's event is a flop aimed at ${name(n.target)}: ${n.target === meSlug ? 'you' : 'they'} landed on an Event space with the lowest roll.`;
+  line = line.replace(/\.\.(?=\s|$)/g, '.');  // team names like "Gumdrop Co."
   const minors = n.minors.filter(s => game.teams[s]);
   if (minors.includes(meSlug)) line += ' You also landed on an Event space, so you get minor buzz (+5 attention, +1 risk) when it fires.';
   else if (minors.length) line += ` Also on Event spaces: ${minors.map(name).join(', ')} (minor buzz: +5 attention, +1 risk).`;
@@ -515,8 +527,7 @@ export function resolveEvent(game, acts, now = Date.now(), rng = Math.random) {
     const reactions = live.filter(t => t !== target).map(t => ({ t, a: choiceOf(t) }))
       .filter(x => x.a && x.a.choice !== 'Out').sort((x, y) => x.a.at - y.a.at);
     for (const t of live) if (t !== target) { t.cur.eventRole = 'reactor'; t.cur.reaction = 'Out'; }
-    reactions.forEach(({ t, a }, i) => {
-      const bonus = CFG.speedBonus[i] || 0;
+    reactions.forEach(({ t, a }) => {
       let steps, gain;
       if (a.choice === 'Support') { gain = 5; steps = CFG.stepSupport; }
       else {
@@ -525,28 +536,27 @@ export function resolveEvent(game, acts, now = Date.now(), rng = Math.random) {
       }
       t.att += gain;
       t.fromOthers.att += gain;
-      t.fromOthers.spaces += steps + bonus;
+      t.fromOthers.spaces += steps;
       t.cur.reaction = a.choice;
       result.reactorGain += gain;
-      addTrail(game, t, move(game, t, steps + bonus, rng));
+      addTrail(game, t, move(game, t, steps, rng));
       const secs = ((a.at - e.openedAt) / 1000).toFixed(1);
-      result.reactions.push({ slug: t.slug, choice: a.choice, secs, bonus });
-      lines.push(`${t.name} ${a.choice === 'Support' ? 'supported' : 'critiqued'} at ${secs}s${bonus ? ` (+${bonus} speed bonus)` : ''}` +
+      result.reactions.push({ slug: t.slug, choice: a.choice, secs });
+      lines.push(`${t.name} ${a.choice === 'Support' ? `supported (+${steps} space)` : `critiqued (+${steps} spaces)`} at ${secs}s` +
         (a.choice === 'Critique' && response === 'Lean in' && bandIn === 0 ? ', and lost 1 trust because the target leaned in at High trust' : '') + '.');
     });
     game.flopLog.push({ round: game.round, card: e.title, target: target.slug, response, trustIn, targetGain: dAtt, reactorGain: result.reactorGain });
   } else if (e.card === 'Meme Format') {
     const joins = live.map(t => ({ t, a: choiceOf(t) })).filter(x => x.a && x.a.choice === 'Join').sort((x, y) => x.a.at - y.a.at);
-    joins.forEach(({ t, a }, i) => {
-      const bonus = CFG.speedBonus[i] || 0;
+    joins.forEach(({ t, a }) => {
       t.att += 8; t.risk += 1;
       t.fromOthers.att += 8;
-      t.fromOthers.spaces += CFG.stepJoin + bonus;
+      t.fromOthers.spaces += CFG.stepJoin;
       t.cur.reaction = 'Join';
-      addTrail(game, t, move(game, t, CFG.stepJoin + bonus, rng));
+      addTrail(game, t, move(game, t, CFG.stepJoin, rng));
       const secs = ((a.at - e.openedAt) / 1000).toFixed(1);
-      result.reactions.push({ slug: t.slug, choice: 'Join', secs, bonus });
-      lines.push(`${t.name} joined the meme at ${secs}s${bonus ? ` (+${bonus} speed bonus)` : ''}.`);
+      result.reactions.push({ slug: t.slug, choice: 'Join', secs });
+      lines.push(`${t.name} joined the meme (+${CFG.stepJoin} space) at ${secs}s.`);
     });
     if (!joins.length) lines.push('Nobody joined the meme.');
   } else if (e.card === 'Algorithm Shift') {
@@ -640,10 +650,10 @@ export function removeTeam(game, slug) {
 
 // One row per team per round, for the instructor's CSV.
 export function csvRows(game) {
-  const head = ['round', 'team', 'role', 'profile', 'bot', 'roll', 'risk_before', 'risk_after', 'backlash', 'offer_made', 'offer_selected', 'contracts_signed', 'event_role', 'choice', 'position', 'attention', 'trust', 'trust_change', 'profit'];
+  const head = ['round', 'team', 'role', 'profile', 'bot', 'roll', 'risk_check', 'risk_before', 'risk_after', 'backlash', 'offer_made', 'offer_selected', 'contracts_signed', 'event_role', 'choice', 'position', 'attention', 'trust', 'trust_change', 'profit'];
   const rows = [head];
   for (const t of teamsOf(game)) for (const h of t.history) {
-    rows.push([h.round, t.name, t.role, t.profile, t.bot || '', h.roll ?? '', h.riskBefore ?? '', h.riskAfter ?? '', h.backlash ? 1 : 0,
+    rows.push([h.round, t.name, t.role, t.profile, t.bot || '', h.roll ?? '', h.riskCheck ?? '', h.riskBefore ?? '', h.riskAfter ?? '', h.backlash ? 1 : 0,
       h.offerMade ?? '', h.offerSelected ? 1 : 0, h.signed ?? 0, h.eventRole ?? '', h.reaction ?? '', h.pos, h.att, h.trust, h.trust - (t.trustStart ?? PROFILES[t.profile].trust), h.money]);
   }
   return rows.map(r => r.map(v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v).join(',')).join('\n');

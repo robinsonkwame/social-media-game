@@ -137,3 +137,34 @@ test('teams read first: no answers before the countdown, and the host can set an
   await svc.act('reader', { choice });
   await svc.host('resolve');
 });
+
+test('the host sets the dice, a reset keeps it, and reactions earn no speed bonus', async () => {
+  const { svc, tick } = setup(11);
+  let { game } = await svc.hostState();
+  assert.equal(game.diceSides, CFG.diceSides);
+  await assert.rejects(svc.host('dice', { sides: 2 }), /Pick a die/);
+  await svc.host('dice', { sides: 4 });
+  await svc.host('reset');
+  ({ game } = await svc.hostState());
+  assert.equal(game.diceSides, 4);
+  await svc.host('dice', { sides: 3 });
+  await svc.join('Pink Team', 'Heritage');
+  await svc.host('bots', { role: 'infl', count: 3 });
+  await svc.host('start');
+  for (let round = 1; round <= 4; round++) {
+    await svc.host('roll');
+    ({ game } = await svc.hostState());
+    for (const t of Object.values(game.teams)) {
+      assert.ok(t.cur.roll >= 1 && t.cur.roll <= 3);
+      assert.ok(t.cur.riskCheck >= 1 && t.cur.riskCheck <= CFG.riskDie);
+    }
+    await svc.host('finalCall'); await svc.host('closeDeals'); await svc.host('fire');
+    ({ game } = await svc.hostState());
+    if (game.event.timed) await svc.host('startTimer');
+    tick(200000);
+    await svc.host('resolve');
+    ({ game } = await svc.hostState());
+    for (const r of game.event.result.reactions) assert.equal(r.bonus, undefined);
+    await svc.host('next');
+  }
+});

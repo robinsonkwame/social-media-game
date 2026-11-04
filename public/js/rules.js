@@ -3,14 +3,17 @@
 
 export const CFG = {
   rounds: 6, maxRounds: 8,
-  prize: 1000000,
+  prize: 50000,           // the finish prize; every screen reads it from here
   backlashSlide: 3,
   buy: { brand: 12000, infl: 4000 },
   paydayMult: 100,
   fee: 8000,
   // movement from choices; arrays are [High, Mid, Low] trust
   stepTarget: { 'Delete': [0, 0, 0], 'Apologize': [1, 1, 1], 'Ignore': [1, 1, 0], 'Lean in': [3, 1, -1] },
-  stepSupport: 1, stepCritique: 2, stepJoin: 1, speedBonus: [2, 1],
+  stepSupport: 1, stepCritique: 2, stepJoin: 1,
+  diceSides: 3,            // default movement die; the host can change it (diceChoices)
+  diceChoices: [3, 4, 5, 6],
+  riskDie: 6,              // the risk check is its own 1-6 roll, whatever the movement die
   reactionSeconds: 60,     // default; the host can change it (reactionChoices)
   reactionChoices: [30, 45, 60, 90, 120],
   graceMs: 1500,          // late reactions within this window still count (network lag)

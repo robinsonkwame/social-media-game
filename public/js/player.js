@@ -4,7 +4,7 @@ import { createBoard } from './board.js';
 import { CFG, PROFILES, TAGS, FLOP, band, BAND_NAME, FORK1, fork2Index } from './rules.js';
 import { CARDS } from './cards.js';
 import { inRange, spaceOf, lengthOf, choicesFor, netOf, trustChangeOf, money } from './engine.js';
-import { $, esc, storyHtml, leaderboard, feedHtml, HOW_TO, PHASE_LABEL, roleName, signed, nextEventHtml, eventKindHtml, SPEED_LINE, ordinal } from './ui.js';
+import { $, esc, storyHtml, leaderboard, feedHtml, HOW_TO, PHASE_LABEL, roleName, signed, nextEventHtml, eventKindHtml, MOVE_LINE, term, installGlossary } from './ui.js';
 
 const api = await createApi();
 const solo = api.mode === 'solo';  // solo practice: you run the host steps yourself
@@ -33,6 +33,7 @@ function drawJoin(message = '') {
     <small>${p.blurb}</small><small class="num">${money(p.money)} · att ${p.att} · trust ${p.trust}</small></button>`).join('');
   $('tag').innerHTML = TAGS.map(t => `<option>${t}</option>`).join('');
   $('tagField').hidden = PROFILES[profile].role !== 'infl';
+  if ($('diceSides')) $('diceSides').innerHTML = CFG.diceChoices.map(v => `<option value="${v}" ${v === CFG.diceSides ? 'selected' : ''}>1-${v}${v === CFG.diceSides ? ' (recommended)' : ''}</option>`).join('');
   $('joinError').textContent = message;
 }
 $('profilePicker').addEventListener('click', e => {
@@ -47,6 +48,8 @@ $('joinForm').addEventListener('submit', async e => {
   $('joinBtn').disabled = true;
   $('joinError').textContent = '';
   try {
+    // solo: the dice setting survives the reset that a new practice game starts with
+    if (solo) await api.host('dice', { sides: Number($('diceSides').value) });
     const t = await api.join($('teamName').value, profile, $('tag').value);
     slug = t.slug;
     save(slug);
@@ -106,12 +109,12 @@ function renderStatus() {
   $('meRole').textContent = `${t.profile} ${roleName(t.role)}${t.tag ? ' · ' + t.tag : ''}`;
   const chance = Math.round(Math.max(0, Math.min(6, t.risk - 1)) / 6 * 100);
   $('meStats').innerHTML = `
-    <div class="stat"><div class="label">Cash</div><div class="value">${money(t.money)}</div><div class="small muted">Profit ${money(netOf(S.game, t))}</div></div>
-    <div class="stat"><div class="label">Attention</div><div class="value">${t.att}</div><div class="bar"><div style="width:${t.att}%"></div></div></div>
-    <div class="stat"><div class="label">Trust</div><div class="value">${t.trust}<span class="small muted">/10 ${BAND_NAME[band(t.trust)]}</span></div><div class="small muted">${signed(trustChangeOf(t))} since the start</div></div>
-    <div class="stat"><div class="label">Risk</div><div class="value ${chance >= 33 ? 'risk-hi' : ''}">${t.risk}</div><div class="small muted">${chance}% backlash</div></div>`;
+    <div class="stat"><div class="label">${term('cash')}</div><div class="value">${money(t.money)}</div><div class="small muted">${term('profit')} ${money(netOf(S.game, t))}</div></div>
+    <div class="stat"><div class="label">${term('attention')}</div><div class="value">${t.att}</div><div class="bar"><div style="width:${t.att}%"></div></div></div>
+    <div class="stat"><div class="label">${term('trust')}</div><div class="value">${t.trust}<span class="small muted">/10 ${BAND_NAME[band(t.trust)]}</span></div><div class="small muted">${signed(trustChangeOf(t))} since the start</div></div>
+    <div class="stat"><div class="label">${term('risk')}</div><div class="value ${chance >= 33 ? 'risk-hi' : ''}">${t.risk}</div><div class="small muted">${chance}% ${term('backlash', 'backlash')}</div></div>`;
   const c = t.contracts.map(k => `${esc(g.teams[k.partner]?.name || k.partner)} (${k.left} round${k.left > 1 ? 's' : ''} left)`).join(', ');
-  $('meContracts').innerHTML = `Space ${t.pos} of ${lengthOf(t)}${t.finished ? ' · finished!' : ''} · Contracts: ${c || 'none'}`;
+  $('meContracts').innerHTML = `${term('space')} ${t.pos} of ${lengthOf(t)}${t.finished ? ' · finished!' : ''} · ${term('contract', 'Contracts')}: ${c || 'none'}`;
   $('lbBrand').innerHTML = leaderboard(g, 'brand', slug);
   $('lbInfl').innerHTML = leaderboard(g, 'infl', slug);
   $('feed').innerHTML = feedHtml(g);
@@ -151,13 +154,13 @@ function lobbyCard(g, t) {
 function readyCard(g, t) {
   return head(`Round ${g.round}`, 'Get ready') + `
     <p class="prompt">${solo ? 'Roll when you are ready. Everyone rolls at once.' : 'Watch the main screen. The teacher rolls for every team at once.'}</p>
-    <p class="small muted">If your risk (${t.risk}) is higher than your roll, you get a backlash and slide back ${CFG.backlashSlide} spaces. You can buy risk down in the deal window.</p>`;
+    <p class="small muted">You'll roll 1-${g.diceSides || 6} to move. Then a separate 1-${CFG.riskDie} risk check: if your risk (${t.risk}) is higher, you get a backlash and slide back ${CFG.backlashSlide} spaces. You can buy risk down in the deal window.</p>`;
 }
 
 function rollLine(g, t) {
   const r = t.lastRoll;
   const back = (g.log || []).some(l => l.r === g.round && l.text.startsWith(t.name + ' rolled') && l.text.includes('BACKLASH'));
-  return t.finished ? 'You are at the finish!' : `You rolled ${r}${back ? ' and got a backlash' : ''}. You're on ${/^[AEIOU]/.test(spaceOf(t).type) ? 'an' : 'a'} ${spaceOf(t).type} space.`;
+  return t.finished ? 'You are at the finish!' : `You rolled ${r}${back ? ', then failed the risk check: backlash, back ' + CFG.backlashSlide : ''}. You're on ${/^[AEIOU]/.test(spaceOf(t).type) ? 'an' : 'a'} ${spaceOf(t).type} space.`;
 }
 
 function dealsCard(g, t) {
@@ -189,7 +192,7 @@ function dealsCard(g, t) {
   }
   return head('Deal window', `${g.trend} is trending`) + `
     <p class="prompt">${esc(rollLine(g, t))}</p>${nextEventHtml(g, slug)}
-    <div class="field"><label>Buy down risk (${money(price)} per point)</label>
+    <div class="field"><label>Buy down ${term('risk', 'risk')} (${money(price)} per point)</label>
       <div class="row"><button type="button" class="btn" data-buy="-1" ${draft.buy <= 0 ? 'disabled' : ''}>−</button><span class="num">${draft.buy}</span>
       <button type="button" class="btn" data-buy="1" ${draft.buy >= maxBuy ? 'disabled' : ''}>+</button>
       <span class="small muted">Risk ${t.risk} → ${t.risk - draft.buy} · cost ${money(draft.buy * price)}</span></div></div>
@@ -234,7 +237,7 @@ function dealtCard(g, t) {
   const fresh = t.contracts.filter(k => k.left === 2).map(k => g.teams[k.partner]?.name).filter(Boolean);
   return head('Deals are done', `Round ${g.round}`) + `
     <p class="prompt">${fresh.length ? `You signed with ${esc(fresh.join(' and '))}.` : 'No new contract for you this round.'}</p>
-    ${nextEventHtml(g, slug)}<p class="small muted">${esc(SPEED_LINE)}</p>`;
+    ${nextEventHtml(g, slug)}<p class="small muted">${esc(MOVE_LINE)}</p>`;
 }
 
 function respHint(r, t, c) {
@@ -246,7 +249,7 @@ function respHint(r, t, c) {
 function choiceList(e, c, t) {
   if (c.kind === 'flop' && e.target === slug) return Object.keys(FLOP).map(r => [r, r, respHint(r, t, c)]);
   if (c.kind === 'flop') return [['Support', 'Support', `+5 att · +${CFG.stepSupport} space`], ['Critique', 'Critique', `+10 att · +2 risk · +${CFG.stepCritique} spaces · −1 trust if they lean in at High trust`], ['Out', 'Stay out', 'No change']];
-  return [['Join', 'Join the meme', `+8 att · +1 risk · +${CFG.stepJoin} space · speed bonus`], ['Out', 'Stay out', 'No change']];
+  return [['Join', 'Join the meme', `+8 att · +1 risk · +${CFG.stepJoin} space`], ['Out', 'Stay out', 'No change']];
 }
 
 function eventCard(g, t) {
@@ -267,7 +270,7 @@ function eventCard(g, t) {
     // reading time: the story is open and the choices wait for the countdown
     const preview = options.length ? `<div class="choices">${choiceList(e, c, t).map(([, label, hint]) => `<button type="button" class="choice" disabled><b>${esc(label)}</b><small>${esc(hint)}</small></button>`).join('')}</div>` : '';
     return head(title, 'Read the story') + kind + `<p class="prompt">${esc(prompt)}</p>${storyHtml(e.card, false)}${preview}
-      <p class="small muted">${options.length ? `Your choices open when ${solo ? 'you start' : 'the teacher starts'} the ${g.reactionSeconds || CFG.reactionSeconds}-second countdown. ${SPEED_LINE}` : (t.finished ? "You're at the finish, so you sit this one out." : 'No decision this time.')}</p>`;
+      <p class="small muted">${options.length ? `Your choices open when ${solo ? 'you start' : 'the teacher starts'} the ${g.reactionSeconds || CFG.reactionSeconds}-second countdown. ${MOVE_LINE}` : (t.finished ? "You're at the finish, so you sit this one out." : 'No decision this time.')}</p>`;
   }
   if (!options.length) {
     return head(title, 'Event') + `<p class="prompt">${esc(prompt)}</p>${timer}<p class="small muted">${t.finished ? "You're at the finish, so you sit this one out." : 'No decision this time. Watch the main screen.'}</p>${learn}`;
@@ -280,7 +283,7 @@ function eventCard(g, t) {
   }
   const choices = choiceList(e, c, t);
   return head(title, 'Reaction window') + kind + `<p class="prompt">${esc(prompt)}</p>${timer}
-    <p class="small"><b>${esc(SPEED_LINE)}</b></p>
+    <p class="small"><b>${esc(MOVE_LINE)}</b></p>
     <div class="choices">${choices.map(([id, label, hint]) => `<button type="button" class="choice" data-choice="${id}" ${busy ? 'disabled' : ''}><b>${esc(label)}</b><small>${esc(hint)}</small></button>`).join('')}</div>
     ${learn}${flashLine()}<div class="small muted" id="botTicker"></div>`;
 }
@@ -288,9 +291,10 @@ function eventCard(g, t) {
 function resultsCard(g, t) {
   const e = g.event, r = e?.result;
   if (!r) return head('Round results', '') + '<p class="muted">Waiting for results.</p>';
-  const idx = r.reactions.findIndex(x => x.slug === slug), mine = r.reactions[idx];
+  const mine = r.reactions.find(x => x.slug === slug);
+  const steps = { Support: CFG.stepSupport, Critique: CFG.stepCritique, Join: CFG.stepJoin };
   const my = e.target === slug ? `You chose ${r.response}.`
-    : mine ? `You chose ${mine.choice === 'Join' ? 'to join' : mine.choice} at ${mine.secs}s, ${ordinal(idx + 1)} to react${mine.bonus ? `: +${mine.bonus} bonus space${mine.bonus > 1 ? 's' : ''} toward the finish` : ' (only the first two get a speed bonus)'}.` : '';
+    : mine ? `You chose ${mine.choice === 'Join' ? 'to join' : mine.choice}: +${steps[mine.choice]} space${steps[mine.choice] === 1 ? '' : 's'} toward the finish.` : '';
   return head(e.title, 'Results') + `
     ${my ? `<p class="prompt">${esc(my)}</p>` : ''}
     <ul class="small">${r.lines.map(l => `<li>${esc(l)}</li>`).join('')}</ul>
@@ -318,7 +322,7 @@ function finishedCard(g, t) {
     ${g.code ? `<div class="big-code" aria-label="Participation code">${esc(g.code)}</div>` : '<p class="prompt">Your teacher will give you the participation code.</p>'}`;
   return `${code}
     ${head('Game over', `${g.rounds} rounds`)}
-    <p class="prompt">${winner ? `${esc(winner.name)} ${esc(g.winner.how)} and won ${money(CFG.prize)}. ` : ''}You finished <b>#${rank}</b> of ${peers.length} ${roleName(role)}s with ${money(netOf(g, t))} profit and trust ${t.trust} (${signed(trustChangeOf(t))}).</p>
+    <p class="prompt">${winner ? `${esc(winner.name)} ${esc(g.winner.how)} and won ${money(CFG.prize)}. ` : ''}You finished <b>#${rank}</b> of ${peers.length} ${roleName(role)}s with ${money(netOf(g, t))} ${term('profit', 'profit')} and ${term('trust', 'trust')} ${t.trust} (${signed(trustChangeOf(t))}).</p>
     <div class="story"><div class="eyebrow">Success or lucky accident? · Our flops</div><ul>${flops}</ul></div>
     <div class="story"><div class="eyebrow">Who won the moment?</div>From other teams' events you gained <b class="num">${t.fromOthers.att}</b> attention and <b class="num">${t.fromOthers.spaces}</b> spaces.</div>
     <div class="story"><div class="eyebrow">Attention or lasting value?</div>${chart}</div>`;
@@ -438,6 +442,8 @@ $('phaseCard').addEventListener('input', e => {
 });
 
 // ---------------------------------------------------------------- rules overlay
+
+installGlossary();
 
 $('rulesBtn').addEventListener('click', () => {
   const root = $('overlayRoot');
