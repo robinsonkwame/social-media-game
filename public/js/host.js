@@ -4,7 +4,7 @@ import { createApi, startPolling, isDebug } from './api.js';
 import { createBoard } from './board.js';
 import { CFG } from './rules.js';
 import { CARDS } from './cards.js';
-import { csvRows, netOf, money } from './engine.js';
+import { csvRows, netOf, money, extendTo } from './engine.js';
 import { $, esc, storyHtml, leaderboard, feedHtml, PHASE_LABEL, roleName, nextEventHtml, eventKindHtml, MOVE_LINE, installGlossary, showVersion } from './ui.js';
 
 const api = await createApi();
@@ -49,7 +49,7 @@ function phaseButtons(g) {
   if (g.phase === 'results') {
     if (g.round < g.rounds) return [['next', `Start round ${g.round + 1}`, 'Clears the event and gets ready for the next roll.']];
     const out = [];
-    if (g.rounds < CFG.maxRounds) out.push(['extend', `Extend to ${CFG.maxRounds} rounds`, 'Adds two more rounds.']);
+    if (g.rounds < CFG.maxRounds) out.push(['extend', `Extend to ${extendTo(g)} rounds`, `Adds ${extendTo(g) - g.rounds} more round${extendTo(g) - g.rounds === 1 ? '' : 's'}.`]);
     out.push(['finish', 'Finish the game', `Awards ${money(CFG.prize)} to the first team that finished (or the furthest along) and shows the participation code on every phone.`]);
     return out;
   }
@@ -73,6 +73,12 @@ function renderControls() {
     phaseButtons(g).map(([a, label, hint], i) => `<button class="btn ${i === phaseButtons(g).length - 1 ? 'primary' : ''}" data-action="${a}" type="button" ${busy ? 'disabled' : ''}>${esc(label)}</button><p class="small muted" style="margin:0">${esc(hint)}</p>`).join('') +
     (g.phase === 'finished' ? '<p class="small">Game over. Download the CSV, or reset to play again.</p>' : '');
   if (document.activeElement !== $('codeInput')) $('codeInput').value = g.code || '';
+  if (document.activeElement !== $('roundsSelect')) {
+    // rounds already played can't be taken away
+    const opts = [...new Set([...CFG.roundChoices, g.rounds])].sort((a, b) => a - b);
+    $('roundsSelect').innerHTML = opts.map(v => `<option value="${v}" ${v === g.rounds ? 'selected' : ''} ${v < g.round ? 'disabled' : ''}>${v} rounds${v === CFG.rounds ? ' (recommended)' : ''}</option>`).join('');
+    $('roundsSelect').disabled = g.phase === 'finished';
+  }
   if (document.activeElement !== $('diceSelect')) {
     const cur = g.diceSides || 6;
     $('diceSelect').innerHTML = CFG.diceChoices.map(v => `<option value="${v}" ${v === cur ? 'selected' : ''}>1-${v}${v === CFG.diceSides ? ' (recommended)' : ''}</option>`).join('');
@@ -142,6 +148,7 @@ function renderPlay() {
 $('codeBtn').addEventListener('click', () => hostAction('code', { code: $('codeInput').value }));
 $('timerSelect').addEventListener('change', e => hostAction('timer', { seconds: Number(e.target.value) }));
 $('diceSelect').addEventListener('change', e => hostAction('dice', { sides: Number(e.target.value) }));
+$('roundsSelect').addEventListener('change', e => hostAction('rounds', { rounds: Number(e.target.value) }));
 $('unstickBtn').addEventListener('click', () => hostAction('unstick'));
 $('resetBtn').addEventListener('click', () => {
   if (armed === 'reset') { armed = ''; hostAction('reset'); }

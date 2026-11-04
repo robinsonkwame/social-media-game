@@ -16,13 +16,13 @@ The report-out on these questions happens outside the game. A mechanic that prod
 
 ## Session formats
 
-The classroom game runs six rounds by default, and the instructor can extend it to eight at the end of round six. Self-play is a short tutorial assigned before class so students arrive knowing the mechanics.
+The classroom game runs six rounds by default. The instructor picks the length from 6 to 14 rounds, can change it mid-game as long as it stays at or above the current round, and can add two more rounds when the last one ends. Solo practice offers the same choice on its start screen. Self-play is a short tutorial assigned before class so students arrive knowing the mechanics.
 
 | Format | Players | Board | Rounds | Length |
 | --- | --- | --- | --- | --- |
-| Classroom | 4 to 7 teams of 2 to 4 students | 36 spaces, two forks | 6, extendable to 8 | 20 to 25 min |
+| Classroom | 4 to 7 teams of 2 to 4 students | 36 spaces, two forks | 6 by default, 6 to 14 | 20 to 25 min for six |
 | Self-play | 1 learner and 1 bot | 10 spaces | 5 | about 6 min |
-| Solo test | 1 player and 5 bots | the classroom board | 6, extendable to 8 | about 15 min |
+| Solo test | 1 player and 5 bots | the classroom board | 6 by default, 6 to 14 | about 15 min for six |
 
 For a class of 17, the classroom timing is about 2 minutes to open, 2 minutes per round, and 5 minutes for the end summary and buffer. Six rounds give roughly 19 minutes and eight give roughly 23.
 
@@ -95,7 +95,7 @@ Event spaces enter the round's event draw. A payday pays out when a piece lands 
 
 Pieces move by the roll and also by the choices in the reaction window (see "Events and the reaction window"), so the board was lengthened from 32 to 36 spaces. With a six-sided die and the old speed bonus, some team reached the finish in about 50% of six-round games and 99% of eight-round games, with about 3.3 of 6 teams finishing in eight. On the original 26-space path, a team finished in 97% of six-round games.
 
-The game now defaults to a 1–3 die and no speed bonus, which is much slower. In 400 all-bot games through the real engine, pieces averaged 43% of the board after six rounds and no team finished even in eight, so the finish prize normally goes to the piece furthest along. With a 1–4 die, a team finished in 13% of eight-round games; with 1–6, in 25% of six-round and 95% of eight-round games. The instructor picks the die to suit the class.
+The game now defaults to a 1–3 die and no speed bonus, which is much slower. In 400 all-bot games through the real engine, pieces averaged 43% of the board after six rounds and no team finished even in eight, so the finish prize normally goes to the piece furthest along. With a 1–4 die, a team finished in 13% of eight-round games; with 1–6, in 25% of six-round and 95% of eight-round games. The instructor picks the die to suit the class. With no round limit, the first team reached the castle around round 12 on the 1–3 die, round 10 on 1–4, round 8 on 1–5 and round 7 on 1–6, so a 12- to 14-round game on the default die usually sees a finisher.
 
 ## Round sequence and timers
 
@@ -112,7 +112,7 @@ A round lasts about two minutes, and the app controls every phase with a visible
 
 Fork choices are made in the deal window of the round before a piece could reach the fork. A team that makes no choice takes the quiet route.
 
-The instructor can pause, skip a phase, or extend the game from six rounds to eight when round six ends.
+The instructor can pause, skip a phase, change the number of rounds, or add two rounds when the last one ends.
 
 ## Deals, multiple offers, and the final call
 

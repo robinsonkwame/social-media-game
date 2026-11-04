@@ -3,7 +3,7 @@ import { createApi, startPolling } from './api.js';
 import { createBoard } from './board.js';
 import { CFG, PROFILES, TAGS, FLOP, band, BAND_NAME, FORK1, fork2Index } from './rules.js';
 import { CARDS } from './cards.js';
-import { inRange, spaceOf, lengthOf, choicesFor, netOf, trustChangeOf, money } from './engine.js';
+import { inRange, spaceOf, lengthOf, choicesFor, netOf, trustChangeOf, money, extendTo } from './engine.js';
 import { $, esc, storyHtml, leaderboard, feedHtml, HOW_TO, PHASE_LABEL, roleName, signed, nextEventHtml, eventKindHtml, MOVE_LINE, term, installGlossary, showVersion } from './ui.js';
 
 const api = await createApi();
@@ -33,6 +33,7 @@ function drawJoin(message = '') {
     <small>${p.blurb}</small><small class="num">${money(p.money)} · att ${p.att} · trust ${p.trust}</small></button>`).join('');
   $('tag').innerHTML = TAGS.map(t => `<option>${t}</option>`).join('');
   $('tagField').hidden = PROFILES[profile].role !== 'infl';
+  if ($('roundCount')) $('roundCount').innerHTML = CFG.roundChoices.map(v => `<option value="${v}" ${v === CFG.rounds ? 'selected' : ''}>${v} rounds${v === CFG.rounds ? ' (recommended)' : ''}</option>`).join('');
   if ($('diceSides')) $('diceSides').innerHTML = CFG.diceChoices.map(v => `<option value="${v}" ${v === CFG.diceSides ? 'selected' : ''}>1-${v}${v === CFG.diceSides ? ' (recommended)' : ''}</option>`).join('');
   $('joinError').textContent = message;
 }
@@ -49,7 +50,10 @@ $('joinForm').addEventListener('submit', async e => {
   $('joinError').textContent = '';
   try {
     // solo: the dice setting survives the reset that a new practice game starts with
-    if (solo) await api.host('dice', { sides: Number($('diceSides').value) });
+    if (solo) {
+      await api.host('dice', { sides: Number($('diceSides').value) });
+      await api.host('rounds', { rounds: Number($('roundCount').value) }).catch(() => api.host('reset').then(() => api.host('rounds', { rounds: Number($('roundCount').value) })));
+    }
     const t = await api.join($('teamName').value, profile, $('tag').value);
     slug = t.slug;
     save(slug);
@@ -341,7 +345,7 @@ function soloSteps(g, t) {
       : g.event && !g.event.openedAt ? [['startTimer', `Start the ${g.reactionSeconds || CFG.reactionSeconds}-second countdown`]]
       : [['resolve', S.myAct || !choicesFor(g, t).length ? 'Score the event' : 'Skip and score the event']],
     results: g.round < g.rounds ? [['next', `Start round ${g.round + 1}`]]
-      : [...(g.rounds < CFG.maxRounds ? [['extend', `Extend to ${CFG.maxRounds} rounds`]] : []), ['finish', 'Finish the game']],
+      : [...(g.rounds < CFG.maxRounds ? [['extend', `Extend to ${extendTo(g)} rounds`]] : []), ['finish', 'Finish the game']],
     finished: [['again', 'Play again']],
   }[g.phase] || [];
   if (!steps.length) return '';

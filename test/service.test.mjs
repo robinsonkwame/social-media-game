@@ -168,3 +168,32 @@ test('the host sets the dice, a reset keeps it, and reactions earn no speed bonu
     await svc.host('next');
   }
 });
+
+test('the host picks the number of rounds, never below the current round, and Extend adds two', async () => {
+  const { svc } = setup(13);
+  const playRound = async () => {
+    await svc.host('roll'); await svc.host('finalCall'); await svc.host('closeDeals'); await svc.host('fire');
+    if ((await svc.hostState()).game.event.timed) await svc.host('startTimer');
+    await svc.host('resolve');
+  };
+  await svc.host('rounds', { rounds: 8 });
+  await svc.host('reset');
+  let { game } = await svc.hostState();
+  assert.equal(game.rounds, 8);
+  await assert.rejects(svc.host('rounds', { rounds: 5 }), /Pick/);
+  await assert.rejects(svc.host('rounds', { rounds: 15 }), /Pick/);
+  await svc.host('rounds', { rounds: 6 });
+  await svc.join('Pink Team', 'Heritage');
+  await svc.host('start');
+  for (let round = 1; round <= 6; round++) { await playRound(); if (round < 6) await svc.host('next'); }
+  await assert.rejects(svc.host('next'), /last round/);
+  await svc.host('extend');
+  ({ game } = await svc.hostState());
+  assert.equal(game.rounds, 8);
+  await svc.host('next');
+  await svc.host('rounds', { rounds: 7 });
+  await assert.rejects(svc.host('rounds', { rounds: 6 }), /already under way/);
+  await svc.host('rounds', { rounds: 14 });
+  ({ game } = await svc.hostState());
+  assert.equal(game.rounds, 14);
+});

@@ -153,6 +153,7 @@ export function createService(store, { now = () => Date.now(), rng = Math.random
         case 'addTime': await withGame(g => E.addTime(g, payload.seconds, now())); break;
         case 'timer': await withGame(g => E.setReactionSeconds(g, payload.seconds)); break;
         case 'dice': await withGame(g => E.setDiceSides(g, payload.sides)); break;
+        case 'rounds': await withGame(g => E.setRounds(g, payload.rounds)); break;
         case 'resolve': await closeStage('event', (g, acts) => E.resolveEvent(g, acts, now(), rng)); break;
         case 'next': await withGame(g => E.nextRound(g)); break;
         case 'extend': await withGame(g => E.extendGame(g)); break;
@@ -177,7 +178,7 @@ export function createService(store, { now = () => Date.now(), rng = Math.random
         }
         case 'reset': {
           const { game: old } = await loadGame();
-          await withGame(g => { Object.keys(g).forEach(k => delete g[k]); Object.assign(g, E.newGame(now(), rng), { code: old.code, reactionSeconds: old.reactionSeconds || g.reactionSeconds, diceSides: old.diceSides || g.diceSides }); });
+          await withGame(g => { Object.keys(g).forEach(k => delete g[k]); Object.assign(g, E.newGame(now(), rng), { code: old.code, reactionSeconds: old.reactionSeconds || g.reactionSeconds, diceSides: old.diceSides || g.diceSides, rounds: old.rounds || g.rounds }); });
           const keys = await store.list(`g/${old.id}/`);
           await Promise.all(keys.map(k => store.del(k)));
           break;

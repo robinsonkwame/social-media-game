@@ -2,10 +2,12 @@
 // sim/RESULTS.md; change them there first, then here.
 
 // Shown at the bottom of every page. Bump it with each release you push.
-export const VERSION = '1.1.0';
+export const VERSION = '1.2.0';
 
 export const CFG = {
-  rounds: 6, maxRounds: 8,
+  rounds: 6,               // default; the host can change it (roundChoices)
+  roundChoices: [6, 7, 8, 9, 10, 11, 12, 13, 14], maxRounds: 14,
+  extendBy: 2,             // the end-of-game Extend button
   prize: 50000,           // the finish prize; every screen reads it from here
   backlashSlide: 3,
   buy: { brand: 12000, infl: 4000 },

@@ -24,7 +24,7 @@ real social media flops. Each event card cites the true story behind it.
 4. **Show the next event**: a true-story card appears on every screen with the story open and no clock, so teams can read it. Everyone already knows from the deal window whether it's a flop aimed at one team (it landed on an Event space with the lowest roll) or an event that affects everyone. Cards with no choices (Algorithm Shift, Trend Spike) just need **Apply the event**.
 5. **Start the countdown**: choices open on every phone, and the projector lists who has locked in. Each team's first tap is final. The countdown is 60 seconds by default; set it under **Reaction countdown**, and press **+15 seconds** if the class needs longer.
 6. **Close the event and score it**: choices and movement apply, the round ends, and everyone sees what really happened.
-7. **Start the next round**, or after round 6 **Extend to 8 rounds** or **Finish the game**.
+7. **Start the next round**, or after the last round **Extend** (two more rounds, up to 14) or **Finish the game**. Set the length under **Rounds** (6 to 14, default 6); you can change it mid-game, but not below the round you're on.
 
 Set the participation code in the lobby; every phone shows it at the end.
 With the 1–3 die, pieces usually get about halfway in six rounds, so the finish prize normally goes to the piece furthest along. Pick a bigger die if you want teams to reach the castle.

@@ -154,6 +154,15 @@ function beginStep(game) {
 
 export const sidesOf = game => game.diceSides || 6;  // games saved before the setting rolled 1-6
 
+export function setRounds(game, rounds) {
+  const n = Math.round(Number(rounds));
+  if (!CFG.roundChoices.includes(n)) throw new GameError(`Pick ${CFG.roundChoices.join(', ')} rounds`);
+  if (game.phase === 'finished') throw new GameError('The game is over. Reset to start a new one.');
+  if (n < game.round) throw new GameError(`Round ${game.round} is already under way, so pick ${game.round} or more`);
+  game.rounds = n;
+  say(game, `The game is now ${n} rounds.`);
+}
+
 export function setDiceSides(game, sides) {
   const n = Math.round(Number(sides));
   if (!CFG.diceChoices.includes(n)) throw new GameError(`Pick a die from 1-${CFG.diceChoices[0]} to 1-${CFG.diceChoices.at(-1)}`);
@@ -611,10 +620,12 @@ export function nextRound(game) {
   say(game, `Round ${game.round}.`);
 }
 
+export const extendTo = game => Math.min(CFG.maxRounds, game.rounds + CFG.extendBy);
+
 export function extendGame(game) {
   if (game.rounds >= CFG.maxRounds) throw new GameError(`The game is already ${CFG.maxRounds} rounds`);
-  game.rounds = CFG.maxRounds;
-  say(game, `The host extended the game to ${CFG.maxRounds} rounds.`);
+  game.rounds = extendTo(game);
+  say(game, `The host extended the game to ${game.rounds} rounds.`);
 }
 
 export function payoutOf(game, slug) { return game.winner && game.winner.slug === slug ? CFG.prize : 0; }
